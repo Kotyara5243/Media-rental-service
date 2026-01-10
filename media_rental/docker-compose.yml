@@ -1,0 +1,65 @@
+services:
+  mariadb:
+    image: mariadb:12.1.2
+    container_name: media_rental_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MARIADB_DATABASE}
+      MYSQL_USER: ${MARIADB_USER}
+      MYSQL_PASSWORD: ${MARIADB_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Dont forget to remove local bind mounts on submission
+    networks:
+      - app-network
+    # NO HEALTHCHECK for now
+
+  mongodb:
+    image: mongo:8
+    container_name: media_rental_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    command: mongod --auth
+
+  backend:
+    build: .
+    container_name: media_rental_backend
+    depends_on:
+      - mariadb
+      - mongodb
+    ports:
+      - "${BACKEND_PORT}:8000"
+    environment:
+      MARIADB_HOST: mariadb
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MONGODB_HOST: mongodb
+      MONGODB_USER: ${MONGODB_ROOT_USER}
+      MONGODB_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGODB_DATABASE: ${MONGODB_DATABASE}
+    networks:
+      - app-network
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      # Dont forget to remove local bind mounts on submission
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+  mongodb_data:

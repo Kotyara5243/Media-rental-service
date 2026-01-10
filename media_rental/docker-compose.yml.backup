@@ -1,0 +1,71 @@
+ version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: media_rental_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: media_rental_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  mongodb:
+    image: mongo:latest
+    container_name: media_rental_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: media_rental_nosql
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - app-network
+    command: mongod --auth
+
+  backend:
+    build: .
+    container_name: media_rental_backend
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      MARIADB_HOST: mariadb
+      MARIADB_USER: app_user
+      MARIADB_PASSWORD: app_password
+      MARIADB_DATABASE: media_rental_db
+      MONGODB_HOST: mongodb
+      MONGODB_USER: root
+      MONGODB_PASSWORD: rootpassword
+      MONGODB_DATABASE: media_rental_nosql
+    networks:
+      - app-network
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+  mongodb_data:

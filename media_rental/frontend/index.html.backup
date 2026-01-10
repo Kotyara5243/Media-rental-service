@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Rental Service</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .card {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .output {
+            background: #333;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Media Rental Service</h1>
+        <p>Milestone 2 - Group 7</p>
+        
+        <div class="card">
+            <h2>System Status</h2>
+            <button onclick="checkHealth()">Check API Health</button>
+            <div id="health-status"></div>
+        </div>
+        
+        <div class="card">
+            <h2> Use Case: Rent Media</h2>
+            <p>Student 2: Zhamilya Karzhassova</p>
+            <button onclick="testAPI()">Test API Connection</button>
+            <button onclick="testDB()">Test Database</button>
+        </div>
+        <div class="card">
+   	     <h2>Data Import</h2>
+   	     <button onclick="addData()">Add Sample Data</button>
+    	     <button onclick="checkData()">Check Data</button>
+    	     <button onclick="testDatabase()">Test Database</button>
+	</div>
+        <div id="output" class="output">Output will appear here...</div>
+    </div>
+    
+    <script>
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                document.getElementById('health-status').innerHTML = 
+                    `<p>Status: ${data.status}</p><p>Service: ${data.service}</p>`;
+                showOutput(data);
+            } catch (error) {
+                showOutput({error: error.message});
+            }
+        }
+        
+        async function testAPI() {
+            try {
+                const response = await fetch('/api/test');
+                const data = await response.json();
+                showOutput(data);
+            } catch (error) {
+                showOutput({error: error.message});
+            }
+        }
+        
+        async function testDB() {
+            try {
+                const response = await fetch('/api/test-db');
+                const data = await response.json();
+                showOutput(data);
+            } catch (error) {
+                showOutput({error: error.message});
+            }
+        }
+        
+        function showOutput(data) {
+            document.getElementById('output').innerHTML = 
+                JSON.stringify(data, null, 2);
+        }
+	// updated functions
+
+async function addData() {
+    document.getElementById('output').innerHTML = 'Adding sample data...';
+    try {
+        const response = await fetch('/api/add-data', {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (data.message) {
+            document.getElementById('output').innerHTML = 
+                'Success! ' + data.message + '<br>Now checking data...';
+            // Wait 1 second and check data
+            setTimeout(checkData, 1000);
+        } else {
+            document.getElementById('output').innerHTML = 'Error: ' + data.error;
+        }
+    } catch (error) {
+        document.getElementById('output').innerHTML = 'Error: ' + error.message;
+    }
+}
+
+async function checkData() {
+    try {
+        const response = await fetch('/api/check-data');
+        const data = await response.json();
+        
+        let html = '<h3> Current Data</h3>';
+        
+        // Use the new field names from your backend
+        html += '<p>Total Users: ' + (data.total_users || 0) + '</p>';
+        html += '<p>Total Media: ' + (data.total_media || 0) + '</p>';
+        html += '<p>Total Rentals: ' + (data.total_rentals || 0) + '</p>';
+        
+        // Check if Zhami exists
+        if (data.zhami) {
+            html += '<h4> Test User:</h4>';
+            html += '<p>Name: ' + data.zhami.name + ' (ID: ' + data.zhami.user_id + ')</p>';
+            html += '<p>Email: ' + data.zhami.email + '</p>';
+            html += '<p>Location: ' + data.zhami.city + '</p>';
+        }
+        
+        // Check if Zhami has a rental
+        if (data.zhami_rental) {
+            html += '<h4>Active Rental:</h4>';
+            html += '<p>Movie: ' + data.zhami_rental.movie + '</p>';
+            html += '<p>Rented on: ' + data.zhami_rental.rented_on + '</p>';
+            html += '<p>Price: $' + data.zhami_rental.price + '</p>';
+        }
+        
+        document.getElementById('output').innerHTML = html;
+    } catch (error) {
+        document.getElementById('output').innerHTML = 'Error: ' + error.message;
+    }
+}
+
+async function testDatabase() {
+    try {
+        const response = await fetch('/api/test-db');
+        const data = await response.json();
+        document.getElementById('output').innerHTML = 
+            JSON.stringify(data, null, 2);
+    } catch (error) {
+        document.getElementById('output').innerHTML = 'Error: ' + error.message;
+    }
+}
+
+    </script>
+</body>
+</html>
