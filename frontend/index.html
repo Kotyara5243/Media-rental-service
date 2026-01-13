@@ -67,13 +67,14 @@
             <p>Student 2: Zhamilya Karzhassova</p>
             <button onclick="testAPI()">Test API Connection</button>
             <button onclick="testDB()">Test Database</button>
+            <button onclick="clearTables()">Clear Database</button>
         </div>
         <div class="card">
-   	     <h2>Data Import</h2>
-   	     <button onclick="addData()">Add Sample Data</button>
-    	     <button onclick="checkData()">Check Data</button>
-    	     <button onclick="testDatabase()">Test Database</button>
-	</div>
+            <h2>Data Import</h2>
+            <button onclick="addData()">Add Sample Data</button>
+            <button onclick="checkData()">Check Data</button>
+            <button onclick="showTables()">Show Database</button>
+        </div>
         <div id="output" class="output">Output will appear here...</div>
     </div>
     
@@ -116,71 +117,93 @@
         }
 	// updated functions
 
-async function addData() {
-    document.getElementById('output').innerHTML = 'Adding sample data...';
-    try {
-        const response = await fetch('/api/add-data', {
-            method: 'POST'
-        });
-        const data = await response.json();
-        
-        if (data.message) {
+    async function addData() {
+        document.getElementById('output').innerHTML = 'Adding sample data...';
+        try {
+            const response = await fetch('/api/add-data', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            if (data.message) {
+                document.getElementById('output').innerHTML = 
+                    'Success! ' + data.message + '<br>Now checking data...';
+                // Wait 1 second and check data
+                setTimeout(checkData, 1000);
+            } else {
+                document.getElementById('output').innerHTML = 'Error: ' + data.error;
+            }
+        } catch (error) {
+            document.getElementById('output').innerHTML = 'Error: ' + error.message;
+        }
+    }
+
+    async function checkData() {
+        try {
+            const response = await fetch('/api/check-data');
+            const data = await response.json();
+            
+            let html = '<h3> Current Data</h3>';
+            
+            // Use the new field names from your backend
+            html += '<p>Total Users: ' + (data.total_users || 0) + '</p>';
+            html += '<p>Total Media: ' + (data.total_media || 0) + '</p>';
+            html += '<p>Total Rentals: ' + (data.total_rentals || 0) + '</p>';
+            
+            // Check if Zhami exists
+            if (data.zhami) {
+                html += '<h4> Test User:</h4>';
+                html += '<p>Name: ' + data.zhami.name + ' (ID: ' + data.zhami.user_id + ')</p>';
+                html += '<p>Email: ' + data.zhami.email + '</p>';
+                html += '<p>Location: ' + data.zhami.city + '</p>';
+            }
+            
+            // Check if Zhami has a rental
+            if (data.zhami_rental) {
+                html += '<h4>Active Rental:</h4>';
+                html += '<p>Movie: ' + data.zhami_rental.movie + '</p>';
+                html += '<p>Rented on: ' + data.zhami_rental.rented_on + '</p>';
+                html += '<p>Price: $' + data.zhami_rental.price + '</p>';
+            }
+            
+            document.getElementById('output').innerHTML = html;
+        } catch (error) {
+            document.getElementById('output').innerHTML = 'Error: ' + error.message;
+        }
+    }
+
+    async function testDatabase() {
+        try {
+            const response = await fetch('/api/test-db');
+            const data = await response.json();
             document.getElementById('output').innerHTML = 
-                'Success! ' + data.message + '<br>Now checking data...';
-            // Wait 1 second and check data
-            setTimeout(checkData, 1000);
-        } else {
-            document.getElementById('output').innerHTML = 'Error: ' + data.error;
+                JSON.stringify(data, null, 2);
+        } catch (error) {
+            document.getElementById('output').innerHTML = 'Error: ' + error.message;
         }
-    } catch (error) {
-        document.getElementById('output').innerHTML = 'Error: ' + error.message;
     }
-}
 
-async function checkData() {
-    try {
-        const response = await fetch('/api/check-data');
-        const data = await response.json();
-        
-        let html = '<h3> Current Data</h3>';
-        
-        // Use the new field names from your backend
-        html += '<p>Total Users: ' + (data.total_users || 0) + '</p>';
-        html += '<p>Total Media: ' + (data.total_media || 0) + '</p>';
-        html += '<p>Total Rentals: ' + (data.total_rentals || 0) + '</p>';
-        
-        // Check if Zhami exists
-        if (data.zhami) {
-            html += '<h4> Test User:</h4>';
-            html += '<p>Name: ' + data.zhami.name + ' (ID: ' + data.zhami.user_id + ')</p>';
-            html += '<p>Email: ' + data.zhami.email + '</p>';
-            html += '<p>Location: ' + data.zhami.city + '</p>';
+    async function showTables() {
+        try {
+            const response = await fetch('/api/tables');
+            const data = await response.json();
+            document.getElementById('output').innerHTML = 
+                JSON.stringify(data, null, 2);
+        } catch (error) {
+            document.getElementById('output').innerHTML = 'Error: ' + error.message;
         }
-        
-        // Check if Zhami has a rental
-        if (data.zhami_rental) {
-            html += '<h4>Active Rental:</h4>';
-            html += '<p>Movie: ' + data.zhami_rental.movie + '</p>';
-            html += '<p>Rented on: ' + data.zhami_rental.rented_on + '</p>';
-            html += '<p>Price: $' + data.zhami_rental.price + '</p>';
-        }
-        
-        document.getElementById('output').innerHTML = html;
-    } catch (error) {
-        document.getElementById('output').innerHTML = 'Error: ' + error.message;
     }
-}
 
-async function testDatabase() {
-    try {
-        const response = await fetch('/api/test-db');
-        const data = await response.json();
-        document.getElementById('output').innerHTML = 
-            JSON.stringify(data, null, 2);
-    } catch (error) {
-        document.getElementById('output').innerHTML = 'Error: ' + error.message;
+    async function clearTables() {
+        try {
+            const response = await fetch('/api/tables/clear');
+            const data = await response.json();
+            document.getElementById('output').innerHTML = 
+                JSON.stringify(data, null, 2);
+        } catch (error) {
+            document.getElementById('output').innerHTML = 'Error: ' + error.message;
+        }
     }
-}
 
     </script>
 </body>

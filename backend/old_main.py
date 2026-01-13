@@ -1,9 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
-
-from .databases.mariadb import mariadb
 
 app = FastAPI(title="Media Rental Service", version="1.0.0") 
 
@@ -24,33 +22,41 @@ async def test_endpoint():
 @app.get("/api/test-db")
 async def test_database():
     try:
-        result = mariadb.test_db()
-        
+        import pymysql
+        connection = pymysql.connect(
+            host=os.getenv('MARIADB_HOST', 'mariadb'),
+            user=os.getenv('MARIADB_USER', 'app_user'),
+            password=os.getenv('MARIADB_PASSWORD', 'app_password'),
+            database=os.getenv('MARIADB_DATABASE', 'media_rental_db'),
+            port=3306
+        )
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            result = cursor.fetchone()
+        connection.close()
         return {
             "db_status": "Connected to MariaDB",
             "test_query": "SELECT 1",
-            "result": result.get("1") if result else None
+            "result": result[0] if result else None
         }
     except Exception as e:
-        print("Error in test_database: "+e)
-        raise HTTPException(status_code=500, detail="Test database error: "+e)
-    
-@app.get("/api/tables/clear")
-async def clear_tables():
-    try:
-        mariadb.delete_all_tables()
-        
-        return {
-            "Tables deleted successfully."
-        }
-    except Exception as e:
-        print("Error in clear_tables: "+e)
-        raise HTTPException(status_code=500, detail="Clear database error: "+e)
+        return {"error": str(e), "db_status": "Connection failed"}
 
 @app.get("/api/tables")
 async def list_tables():
     try:
-        tables = mariadb.list_all_tables_with_rows()
+        import pymysql
+        connection = pymysql.connect(
+            host=os.getenv('MARIADB_HOST', 'mariadb'),
+            user=os.getenv('MARIADB_USER', 'app_user'),
+            password=os.getenv('MARIADB_PASSWORD', 'app_password'),
+            database=os.getenv('MARIADB_DATABASE', 'media_rental_db'),
+            port=3306
+        )
+        with connection.cursor() as cursor:
+            cursor.execute("SHOW TABLES")
+            tables = [row[0] for row in cursor.fetchall()]
+        connection.close()
         
         return {"tables": tables, "count": len(tables)}
     except Exception as e:
@@ -59,12 +65,14 @@ async def list_tables():
 @app.post("/api/add-data")
 async def add_data():
     try:
-        mariadb.add_sample_data()
-        return {"message": "Sample data added successfully"}
+        from backend.data_import import add_sample_data
+        success = add_sample_data()
+        if success:
+            return {"message": "Sample data added successfully"}
+        else:
+            return {"error": "Failed to add data"}
     except Exception as e:
-        print("Error in add_data: "+e)
         return {"error": str(e)}
-        # raise HTTPException(status_code=500, detail="Error adding sample data: "+e)
 
 @app.get("/api/check-data")
 async def check_data():
