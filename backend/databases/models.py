@@ -149,7 +149,7 @@ class Session:
         media_id: int,
         date_of_rent: str,
         cost: int,
-        duration: str
+        duration: int
     ):
         self.session_id = session_id
         self.user_id = user_id
@@ -173,11 +173,13 @@ class Session:
 class WatchHistory:
     def __init__(
         self,
+        watch_history_id: int | None,
         user_id: int,
         media_id: int,
         date_of_watch: str,
         family_watch: bool
     ):
+        self.watch_history_id = watch_history_id
         self.user_id = user_id
         self.media_id = media_id
         self.date_of_watch = date_of_watch
@@ -186,6 +188,7 @@ class WatchHistory:
     @staticmethod
     def from_row(row: dict) -> "WatchHistory":
         return WatchHistory(
+            watch_history_id=row["watch_history_id"],
             user_id=row["user_id"],
             media_id=row["media_id"],
             date_of_watch=row["date_of_watch"],

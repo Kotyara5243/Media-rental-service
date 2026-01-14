@@ -58,7 +58,7 @@ CREATE TABLE Sessions (
 	media_id INT,
 	date_of_rent DATE,
 	cost INT,
-	duration TIME, 
+	duration INT, 
 	PRIMARY KEY (session_id),
 	FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
 	FOREIGN KEY (media_id) REFERENCES Media(media_id) ON DELETE CASCADE
@@ -66,11 +66,12 @@ CREATE TABLE Sessions (
 
 
 CREATE TABLE WatchHistory (
+	watch_history_id INT AUTO_INCREMENT,
 	user_id INT, 
 	media_id INT,
 	date_of_watch DATE,
 	family_watch BOOLEAN,
-	PRIMARY KEY (media_id, user_id),
+	PRIMARY KEY (watch_history_id),
 	FOREIGN KEY (media_id) REFERENCES Media(media_id) ON DELETE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
 );
@@ -84,21 +85,21 @@ CREATE TABLE Device (
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
--- Add some sample data
-INSERT INTO Family (family_type, creation_date) VALUES
-('Movie Lovers', '2025-11-07'),
-('Sci-Fi Fans', '2025-11-05');
+-- -- Add some sample data
+-- INSERT INTO Family (family_type, creation_date) VALUES
+-- ('Movie Lovers', '2025-11-07'),
+-- ('Sci-Fi Fans', '2025-11-05');
 
-INSERT INTO Users (user_name, email, birthday, location, bio, family_id) VALUES
-('Zhami', 'zhami@example.com', '2002-11-22', 'Almaty', 'Film enthusiast', 1),
-('Grisha', 'grisha@example.com', '1990-05-10', 'Moscow', 'Loves Sci-Fi movies', 2);
+-- INSERT INTO Users (user_name, email, birthday, location, bio, family_id) VALUES
+-- ('Zhami', 'zhami@example.com', '2002-11-22', 'Almaty', 'Film enthusiast', 1),
+-- ('Grisha', 'grisha@example.com', '1990-05-10', 'Moscow', 'Loves Sci-Fi movies', 2);
 
-INSERT INTO Media (media_name, genre, prod_year, descr, location, cost_per_day) VALUES
-('Inception', 'Sci-Fi', 2010, 'Dream-sharing technology', 'USA', 8),
-('Breaking Bad', 'Crime Drama', 2008, 'Chemistry teacher makes drugs', 'USA', 4);
+-- INSERT INTO Media (media_name, genre, prod_year, descr, location, cost_per_day) VALUES
+-- ('Inception', 'Sci-Fi', 2010, 'Dream-sharing technology', 'USA', 8),
+-- ('Breaking Bad', 'Crime Drama', 2008, 'Chemistry teacher makes drugs', 'USA', 4);
 
-INSERT INTO Film (duration, number_of_parts, media_id) VALUES
-(148, 1, 1);
+-- INSERT INTO Film (duration, number_of_parts, media_id) VALUES
+-- (148, 1, 1);
 
-INSERT INTO Series (number_of_episodes, is_ongoing, media_id) VALUES
-(62, FALSE, 2);
+-- INSERT INTO Series (number_of_episodes, is_ongoing, media_id) VALUES
+-- (62, FALSE, 2);

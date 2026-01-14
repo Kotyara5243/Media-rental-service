@@ -72,6 +72,7 @@
         <div class="card">
             <h2>Data Import</h2>
             <button onclick="addData()">Add Sample Data</button>
+            <button onclick="generateData()">Generate random data</button>
             <button onclick="checkData()">Check Data</button>
             <button onclick="showTables()">Show Database</button>
         </div>
@@ -130,6 +131,24 @@
                     'Success! ' + data.message + '<br>Now checking data...';
                 // Wait 1 second and check data
                 setTimeout(checkData, 1000);
+            } else {
+                document.getElementById('output').innerHTML = 'Error: ' + data.error;
+            }
+        } catch (error) {
+            document.getElementById('output').innerHTML = 'Error: ' + error.message;
+        }
+    }
+
+    async function generateData() {
+        document.getElementById('output').innerHTML = 'Generating data...';
+        try {
+            const response = await fetch('/api/generate-data', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (data.message) {
+                document.getElementById('output').innerHTML = 
+                    'Data generation complete! ' + data.message;
             } else {
                 document.getElementById('output').innerHTML = 'Error: ' + data.error;
             }

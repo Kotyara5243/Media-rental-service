@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse
 import os
 
 from .databases.mariadb import mariadb
+from .databases.mariadb.data_generator import generate_random_data
 
 app = FastAPI(title="Media Rental Service", version="1.0.0") 
 
@@ -38,14 +39,14 @@ async def test_database():
 @app.get("/api/tables/clear")
 async def clear_tables():
     try:
-        mariadb.delete_all_tables()
+        mariadb.reset_all_tables()
         
         return {
             "Tables deleted successfully."
         }
     except Exception as e:
-        print("Error in clear_tables: "+e)
-        raise HTTPException(status_code=500, detail="Clear database error: "+e)
+        print("Error in clear_tables: "+str(e))
+        raise HTTPException(status_code=500, detail="Clear database error: "+str(e))
 
 @app.get("/api/tables")
 async def list_tables():
@@ -62,9 +63,19 @@ async def add_data():
         mariadb.add_sample_data()
         return {"message": "Sample data added successfully"}
     except Exception as e:
-        print("Error in add_data: "+e)
-        return {"error": str(e)}
-        # raise HTTPException(status_code=500, detail="Error adding sample data: "+e)
+        print("Error in add_data: "+str(e))
+        raise HTTPException(status_code=500, detail="Error adding sample data")
+
+        
+@app.post("/api/generate-data")
+async def generate_data():
+    try:
+        mariadb.reset_all_tables()
+        generate_random_data()
+        return {"message": "Sample data added successfully"}
+    except Exception as e:
+        print("Error in generate_data: "+str(e))
+        raise HTTPException(status_code=500, detail="Error generating data")
 
 @app.get("/api/check-data")
 async def check_data():

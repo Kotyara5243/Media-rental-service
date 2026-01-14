@@ -2,38 +2,37 @@ from ..models import *
 from .mariadb_connection import get_mariadb
 from datetime import datetime
 
+TABLE_RESET_ORDER = [
+    "WatchHistory",
+    "Friendships",
+    "Sessions",
+    "Device",
+    "Film",
+    "Series",
+    "Media",
+    "Users",
+    "Family",
+]
+
 # --------Common functions----------
-def delete_all_tables() :
-    with get_mariadb() as connection :
-        try :
-            with connection.cursor() as cursor :
-                cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-                cursor.execute("DELETE FROM WatchHistory")
-                cursor.execute("DELETE FROM Sessions")
-                cursor.execute("DELETE FROM Device")
-                cursor.execute("DELETE FROM Friendships")
-                cursor.execute("DELETE FROM Film")
-                cursor.execute("DELETE FROM Series")
-                cursor.execute("DELETE FROM Media")
-                cursor.execute("DELETE FROM Users")
-                cursor.execute("DELETE FROM Family")
-                cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
-            connection.commit()
-        except Exception as e:
-            print(f"Error: {e}")
-            connection.rollback()
-            return False
-        
-def test_db() :
+def reset_all_tables():
     with get_mariadb() as connection:
         try:
             with connection.cursor() as cursor:
-                    cursor.execute("SELECT 1")
-                    result = cursor.fetchone()
-                    return result
-        except Exception as e:
+                for table in TABLE_RESET_ORDER:
+                    cursor.execute(f"DELETE FROM `{table}`")
+                    cursor.execute(f"ALTER TABLE `{table}` AUTO_INCREMENT = 1")
+            connection.commit()
+        except Exception:
             connection.rollback()
-            raise e
+            raise
+
+        
+def test_db() :
+    try:
+        return execute_select_one("SELECT %s", 1)
+    except Exception as e:
+        raise e
         
 def __execute_select(sql: str, params: tuple = ()) -> list[dict]:
     with get_mariadb() as connection:
@@ -43,7 +42,6 @@ def __execute_select(sql: str, params: tuple = ()) -> list[dict]:
 
 def __list_tables() -> list[str]:
     rows = __execute_select("SHOW TABLES")
-    # MariaDB returns column name like: Tables_in_<database>
     return [list(row.values())[0] for row in rows]
 
 def list_all_tables_with_rows() -> dict[str, list[dict]]:
@@ -66,23 +64,11 @@ def list_all_tables_with_rows() -> dict[str, list[dict]]:
     return result
 
 
-# def list_tables() :
-#     with get_mariadb() as connection:
-#         try:
-#             with connection.cursor() as cursor:
-#                 cursor.execute("SHOW TABLES")
-#                 tables = [row[0] for row in cursor.fetchall()]
-#                 return tables
-#         except Exception:
-#             connection.rollback()
-#             raise
-
 def add_sample_data() :
     with get_mariadb() as connection:
         try:
             print("Clearing existing data...")
-            delete_all_tables()
-
+            reset_all_tables()
 
             # 1. Add one family
             family = Family(None, 'Movie Fans', datetime.now().date())
@@ -114,12 +100,12 @@ def add_sample_data() :
             insert_film(film)
             print(f"Added 1 film: Inception (Media ID: {media.media_id})")
             
-            # 5. Add one rental session 
-            session = Session(None, zhami.user_id, media.media_id, datetime.now().date(), 10, '02:00:00')
+            # 5. Add one rental session
+            session = Session(None, zhami.user_id, media.media_id, datetime.now(), 10, 1)
             insert_session(session)
             print("Added 1 rental session (Zhami rents Inception)")
 
-            __list_tables()
+            # __list_tables()
         except Exception:
             connection.rollback()
             raise
@@ -225,7 +211,7 @@ def insert_film(film: Film) -> Film:
     return film
 
 def insert_session(session: Session) -> Session:
-    session.session_id = (
+    session.session_id = execute_insert(
         """
         INSERT INTO Sessions
         (user_id, media_id, date_of_rent, cost, duration)
@@ -239,6 +225,7 @@ def insert_session(session: Session) -> Session:
             session.duration,
         ),
     )
+    print(session.session_id)
     return session
 
 def insert_watch_history(history: WatchHistory) -> None:
@@ -257,7 +244,7 @@ def insert_watch_history(history: WatchHistory) -> None:
     )
 
 def insert_device(device: Device) -> Device:
-    device.device_id = (
+    device.device_id = execute_insert(
         """
         INSERT INTO Device (device_name, registration_date, user_id)
         VALUES (%s, %s, %s)
@@ -512,16 +499,19 @@ def update_session(session: Session) -> bool:
     return rows > 0
 
 def update_watch_history(history: WatchHistory) -> bool:
+    if history.watch_history_id is None:
+        raise ValueError("watch_history_id is required for update")
     rows = execute_update(
         """
         UPDATE WatchHistory
         SET date_of_watch = %s,
             family_watch = %s
-        WHERE user_id = %s AND media_id = %s
+        WHERE watch_history_id = %s AND user_id = %s AND media_id = %s
         """,
         (
             history.date_of_watch,
             history.family_watch,
+            history.watch_history_id,
             history.user_id,
             history.media_id,
         ),
@@ -544,3 +534,66 @@ def update_device(device: Device) -> bool:
         ),
     )
     return rows > 0
+
+# --------------Find by id------------------
+
+def execute_select_one(sql: str, params: tuple) -> dict | None:
+    with get_mariadb() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            return cursor.fetchone()
+        
+def find_by_id(table: str, id_column: str, row_id: int) -> dict | None:
+    sql = f"SELECT * FROM `{table}` WHERE `{id_column}` = %s"
+    return execute_select_one(sql, (row_id,))
+
+
+def find_user_by_id(user_id: int) -> User | None:
+    row = find_by_id("Users", "user_id", user_id)
+    return User.from_row(row) if row else None
+
+def find_family_by_id(family_id: int) -> Family | None:
+    row = find_by_id("Family", "family_id", family_id)
+    return Family.from_row(row) if row else None
+
+def find_media_by_id(media_id: int) -> Media | None:
+    row = find_by_id("Media", "media_id", media_id)
+    return Media.from_row(row) if row else None
+
+def find_series_by_id(series_id: int) -> Series | None:
+    row = find_by_id("Series", "series_id", series_id)
+    return Series.from_row(row) if row else None
+
+def find_session_by_id(session_id: int) -> Session | None:
+    row = find_by_id("Sessions", "session_id", session_id)
+    return Session.from_row(row) if row else None
+
+def find_device(device_id: int, user_id: int) -> Device | None:
+    row = execute_select_one(
+        """
+        SELECT * FROM Device
+        WHERE device_id = %s AND user_id = %s
+        """,
+        (device_id, user_id),
+    )
+    return Device.from_row(row) if row else None
+
+def find_friendship(user_id: int, friend_id: int) -> Friendship | None:
+    row = execute_select_one(
+        """
+        SELECT * FROM Friendships
+        WHERE user_id = %s AND friend_id = %s
+        """,
+        (user_id, friend_id),
+    )
+    return Friendship.from_row(row) if row else None
+
+def find_watch_history(watch_history_id: int, user_id: int, media_id: int) -> WatchHistory | None:
+    row = execute_select_one(
+        """
+        SELECT * FROM WatchHistory
+        WHERE watch_history_id = %s AND user_id = %s AND media_id = %s
+        """,
+        (watch_history_id, user_id, media_id),
+    )
+    return WatchHistory.from_row(row) if row else None
