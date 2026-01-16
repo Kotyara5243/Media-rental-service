@@ -56,7 +56,7 @@ CREATE TABLE Sessions (
 	session_id INT AUTO_INCREMENT,
 	user_id INT,
 	media_id INT,
-	date_of_rent DATE,
+	date_of_rent DATETIME,
 	cost INT,
 	duration INT, 
 	PRIMARY KEY (session_id),

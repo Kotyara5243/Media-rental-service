@@ -99,14 +99,14 @@ def generate_series_films() :
 def generate_sessions() :
     inserted_sessions: dict[int, list[int]] = defaultdict(list)
     attempts = 0
-    while len(inserted_sessions) < SESSIONS and attempts < SESSIONS * 10:
-        attempts += 1
+    while attempts < SESSIONS :
         user_id = random.randint(1, USERS)
         media_id = random.randint(1, MEDIA)
         if media_id in inserted_sessions[user_id] :
             continue
+        attempts += 1
         inserted_sessions[user_id].append(media_id)
-        date_of_rent = random_date(365)
+        date_of_rent = datetime.combine(random_date(10), random_time(24))
         cost = random.randrange(1, 50) # TODO: add calculation
         duration = random.randrange(1, 21)
         insert_session( Session(None, user_id, media_id, date_of_rent, cost, duration) )
@@ -129,12 +129,12 @@ def generate_devices() :
 def generate_friendships() :
     inserted_friendships: set[tuple[int, int]] = set()
     attempts = 0
-    while len(inserted_friendships) < FRIENDSHIPS and attempts < FRIENDSHIPS * 10:
-        attempts += 1
+    while attempts < FRIENDSHIPS :
         user_id_1 = random.randint(1, USERS)
         user_id_2 = random.randint(1, USERS)
         if user_id_1 == user_id_2 or (user_id_1, user_id_2) in inserted_friendships or (user_id_2, user_id_1) in inserted_friendships:
             continue
+        attempts += 1
         inserted_friendships.add((user_id_1, user_id_2))
         insert_friendship( Friendship(user_id_1, user_id_2) )
 
@@ -424,7 +424,7 @@ device_names_pool = [
     "TV",
     "Toaster",
     "Xiaomi",
-    "Samsung"
+    "Samsung",
     "PC",
     "Laptop",
     "Smartphone",

@@ -34,14 +34,18 @@ def test_db() :
     except Exception as e:
         raise e
         
-def __execute_select(sql: str, params: tuple = ()) -> list[dict]:
+def execute_select(sql: str, params: tuple = ()) -> list[dict]:
     with get_mariadb() as connection:
         with connection.cursor() as cursor:
             cursor.execute(sql, params)
             return cursor.fetchall()
+        
+def get_table_rows(table_name: str) -> dict:
+    rows = execute_select(f"SELECT * FROM `{table_name}`")
+    return rows
 
-def __list_tables() -> list[str]:
-    rows = __execute_select("SHOW TABLES")
+def list_tables() -> list[str]:
+    rows = execute_select("SHOW TABLES")
     return [list(row.values())[0] for row in rows]
 
 def list_all_tables_with_rows() -> dict[str, list[dict]]:
@@ -55,10 +59,10 @@ def list_all_tables_with_rows() -> dict[str, list[dict]]:
     """
     result: dict[str, list[dict]] = {}
 
-    tables = __list_tables()
+    tables = list_tables()
 
     for table in tables:
-        rows = __execute_select(f"SELECT * FROM `{table}`")
+        rows = execute_select(f"SELECT * FROM `{table}`")
         result[table] = rows
 
     return result

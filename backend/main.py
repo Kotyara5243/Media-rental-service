@@ -5,6 +5,7 @@ import os
 
 from .databases.mariadb import mariadb
 from .databases.mariadb.data_generator import generate_random_data
+from .databases.mariadb.usecase1 import use_case1 as uc1_data_gen
 
 app = FastAPI(title="Media Rental Service", version="1.0.0") 
 
@@ -36,7 +37,7 @@ async def test_database():
         print("Error in test_database: "+e)
         raise HTTPException(status_code=500, detail="Test database error: "+e)
     
-@app.get("/api/tables/clear")
+@app.post("/api/tables/clear")
 async def clear_tables():
     try:
         mariadb.reset_all_tables()
@@ -144,3 +145,26 @@ async def check_data():
         
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.get("/api/usecase1/load-data")
+async def uc1_load_data() :
+    data = uc1_data_gen.load_data()
+    return data
+
+@app.post("/api/usecase1/watch")
+async def uc1_watch_media(user_id: int | None, media_id: int | None) :
+    if user_id is None or media_id is None :
+        raise HTTPException(status_code=400, detail="user_id and media_id are required")
+    uc1_data_gen.watch_media(user_id, media_id)
+    return {"message": "Media watched successfully"}
+
+@app.post("/api/usecase1/generate")
+async def uc1_generate_test_data() :
+    try:
+        mariadb.reset_all_tables()
+        uc1_data_gen.generate_test_data()
+        return {"message": "Test data added successfully"}
+    except Exception as e:
+        print("Error in generate_data: "+str(e))
+        raise HTTPException(status_code=500, detail="Error generating data")

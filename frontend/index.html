@@ -63,6 +63,17 @@
         </div>
         
         <div class="card">
+            <h2> Use Case 1: </h2>
+            <p>Student 1: Grigorii Didenko</p>
+            <button onclick="uc1GenerateTestData()">Generate test data</button>
+            <button onclick="uc1LoadData()">Load use case data</button>
+            <label for="user-select">Choose user:</label>
+            <select id="user-select">
+                <option value="">-- Select --</option>
+            </select>
+            <button onclick="clearTables()">Clear Database</button>
+        </div>
+        <div class="card">
             <h2> Use Case: Rent Media</h2>
             <p>Student 2: Zhamilya Karzhassova</p>
             <button onclick="testAPI()">Test API Connection</button>
@@ -80,23 +91,49 @@
     </div>
     
     <script>
+        async function apiFetch(url, options = {}) {
+            const response = await fetch(url, {
+                headers: { "Content-Type": "application/json" },
+                ...options
+            });
+
+            const body = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                throw {
+                    status: response.status,
+                    error: body?.error ?? {
+                        code: "UNKNOWN_ERROR",
+                        message: "Unexpected error"
+                    }
+                };
+            }
+
+            return body;
+        }
+        
+        function showOutput(data) {
+            document.getElementById('output').innerHTML = 
+                JSON.stringify(data, null, 2);
+        }
+
         async function checkHealth() {
             try {
-                const response = await fetch('/health');
-                const data = await response.json();
-                document.getElementById('health-status').innerHTML = 
-                    `<p>Status: ${data.status}</p><p>Service: ${data.service}</p>`;
-                showOutput(data);
+                apiFetch('/health').then(data => {
+                    document.getElementById('health-status').innerHTML = 
+                        `<p>Status: ${data.status}</p><p>Service: ${data.service}</p>`;
+                    showOutput(data);
+                });
             } catch (error) {
                 showOutput({error: error.message});
             }
         }
-        
+
         async function testAPI() {
             try {
-                const response = await fetch('/api/test');
-                const data = await response.json();
-                showOutput(data);
+                apiFetch('/api/health').then(data => {
+                    showOutput(data);
+                });
             } catch (error) {
                 showOutput({error: error.message});
             }
@@ -104,125 +141,142 @@
         
         async function testDB() {
             try {
-                const response = await fetch('/api/test-db');
-                const data = await response.json();
-                showOutput(data);
+                apiFetch('/api/test-db').then(data => {
+                    showOutput(data);
+                });
             } catch (error) {
                 showOutput({error: error.message});
             }
         }
-        
-        function showOutput(data) {
-            document.getElementById('output').innerHTML = 
-                JSON.stringify(data, null, 2);
-        }
 	// updated functions
 
-    async function addData() {
-        document.getElementById('output').innerHTML = 'Adding sample data...';
-        try {
-            const response = await fetch('/api/add-data', {
-                method: 'POST'
-            });
-            const data = await response.json();
-            
-            if (data.message) {
+        async function addData() {
+            try {
+                const response = apiFetch('/api/add-sample-data', {
+                    method: 'POST'
+                }).then(data => {
+                    showOutput(data);
+                });
+            } catch (error) {
+                showOutput({error: error.message});
+            }
+        }
+
+        async function generateData() {
+            document.getElementById('output').innerHTML = 'Generating data...';
+            try {
+                const response = apiFetch('/api/generate-data', {
+                    method: 'POST'
+                }).then(data => {
+                    showOutput(data);
+                });
+            } catch (error) {
+                showOutput({error: error.message});
+            }
+        }
+
+        async function checkData() {
+            try {
+                const response = await fetch('/api/check-data');
+                const data = await response.json();
+                
+                let html = '<h3> Current Data</h3>';
+                
+                // Use the new field names from your backend
+                html += '<p>Total Users: ' + (data.total_users || 0) + '</p>';
+                html += '<p>Total Media: ' + (data.total_media || 0) + '</p>';
+                html += '<p>Total Rentals: ' + (data.total_rentals || 0) + '</p>';
+                
+                // Check if Zhami exists
+                if (data.zhami) {
+                    html += '<h4> Test User:</h4>';
+                    html += '<p>Name: ' + data.zhami.name + ' (ID: ' + data.zhami.user_id + ')</p>';
+                    html += '<p>Email: ' + data.zhami.email + '</p>';
+                    html += '<p>Location: ' + data.zhami.city + '</p>';
+                }
+                
+                // Check if Zhami has a rental
+                if (data.zhami_rental) {
+                    html += '<h4>Active Rental:</h4>';
+                    html += '<p>Movie: ' + data.zhami_rental.movie + '</p>';
+                    html += '<p>Rented on: ' + data.zhami_rental.rented_on + '</p>';
+                    html += '<p>Price: $' + data.zhami_rental.price + '</p>';
+                }
+                
+                document.getElementById('output').innerHTML = html;
+            } catch (error) {
+                document.getElementById('output').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function testDatabase() {
+            try {
+                const response = await fetch('/api/test-db');
+                const data = await response.json();
                 document.getElementById('output').innerHTML = 
-                    'Success! ' + data.message + '<br>Now checking data...';
-                // Wait 1 second and check data
-                setTimeout(checkData, 1000);
-            } else {
-                document.getElementById('output').innerHTML = 'Error: ' + data.error;
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('output').innerHTML = 'Error: ' + error.message;
             }
-        } catch (error) {
-            document.getElementById('output').innerHTML = 'Error: ' + error.message;
         }
-    }
 
-    async function generateData() {
-        document.getElementById('output').innerHTML = 'Generating data...';
-        try {
-            const response = await fetch('/api/generate-data', {
-                method: 'POST'
-            });
-            const data = await response.json();
-            if (data.message) {
-                document.getElementById('output').innerHTML = 
-                    'Data generation complete! ' + data.message;
-            } else {
-                document.getElementById('output').innerHTML = 'Error: ' + data.error;
+        async function showTables() {
+            try {
+                apiFetch('/api/tables').then(data => {
+                    showOutput(data);
+                });
+            } catch (error) {
+                showOutput({error: error.message});
             }
-        } catch (error) {
-            document.getElementById('output').innerHTML = 'Error: ' + error.message;
         }
-    }
 
-    async function checkData() {
-        try {
-            const response = await fetch('/api/check-data');
-            const data = await response.json();
-            
-            let html = '<h3> Current Data</h3>';
-            
-            // Use the new field names from your backend
-            html += '<p>Total Users: ' + (data.total_users || 0) + '</p>';
-            html += '<p>Total Media: ' + (data.total_media || 0) + '</p>';
-            html += '<p>Total Rentals: ' + (data.total_rentals || 0) + '</p>';
-            
-            // Check if Zhami exists
-            if (data.zhami) {
-                html += '<h4> Test User:</h4>';
-                html += '<p>Name: ' + data.zhami.name + ' (ID: ' + data.zhami.user_id + ')</p>';
-                html += '<p>Email: ' + data.zhami.email + '</p>';
-                html += '<p>Location: ' + data.zhami.city + '</p>';
+        async function clearTables() {
+            try {
+                apiFetch('/api/tables/clear', {
+                    method: 'POST'
+                }).then(data => {
+                    showOutput(data);
+                });
+            } catch (error) {
+                showOutput({error: error.message});
             }
-            
-            // Check if Zhami has a rental
-            if (data.zhami_rental) {
-                html += '<h4>Active Rental:</h4>';
-                html += '<p>Movie: ' + data.zhami_rental.movie + '</p>';
-                html += '<p>Rented on: ' + data.zhami_rental.rented_on + '</p>';
-                html += '<p>Price: $' + data.zhami_rental.price + '</p>';
+        }
+
+        async function uc1LoadData() {
+            try {
+                apiFetch('/api/usecase1/relevant_ids').then(data => {
+                    showOutput(data);
+                    const select = document.getElementById("user-select");
+                    select.innerHTML = '<option value="">-- Select --</option>';
+                    data['users'].forEach(user => {
+                        const option = document.createElement("option");
+                        option.value = user.id;
+                        select.appendChild(option);
+                    });
+                });
+            } catch (error) {
+                showOutput({error: error.message})
             }
-            
-            document.getElementById('output').innerHTML = html;
-        } catch (error) {
-            document.getElementById('output').innerHTML = 'Error: ' + error.message;
         }
-    }
 
-    async function testDatabase() {
-        try {
-            const response = await fetch('/api/test-db');
-            const data = await response.json();
-            document.getElementById('output').innerHTML = 
-                JSON.stringify(data, null, 2);
-        } catch (error) {
-            document.getElementById('output').innerHTML = 'Error: ' + error.message;
+        async function uc1GenerateTestData() {
+            try {
+                apiFetch('/api/usecase1/generate', {
+                    method: 'POST'
+                }).then(data => {
+                    showOutput(data);
+                    const select = document.getElementById("user-select");
+                    select.innerHTML = '<option value="">-- Select --</option>';
+                    data['users'].forEach(user => {
+                        const option = document.createElement("option");
+                        option.value = user;
+                        select.appendChild(option);
+                    });
+                });
+            } catch (error) {
+                showOutput({error: error.message})
+            }
         }
-    }
-
-    async function showTables() {
-        try {
-            const response = await fetch('/api/tables');
-            const data = await response.json();
-            document.getElementById('output').innerHTML = 
-                JSON.stringify(data, null, 2);
-        } catch (error) {
-            document.getElementById('output').innerHTML = 'Error: ' + error.message;
-        }
-    }
-
-    async function clearTables() {
-        try {
-            const response = await fetch('/api/tables/clear');
-            const data = await response.json();
-            document.getElementById('output').innerHTML = 
-                JSON.stringify(data, null, 2);
-        } catch (error) {
-            document.getElementById('output').innerHTML = 'Error: ' + error.message;
-        }
-    }
 
     </script>
 </body>
