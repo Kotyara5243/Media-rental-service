@@ -71,9 +71,13 @@
             <button onclick="uc1LoadData()">Load use case data</button>
             <label for="user-select">Choose user:</label>
             <select id="user-select">
-                <option value="">-- Select --</option>
+                <option value="">-- Select user --</option>
             </select>
-            <button onclick="clearTables()">Clear Database</button>
+            <label for="media-select">Choose media:</label>
+            <select id="media-select">
+                <option value="">-- Select media --</option>
+            </select>
+            <button id="submit-btn" onclick="uc1WatchMedia()">Watch media</button>
         </div>
         <div class="card">
             <h2> Use Case: Rent Media</h2>
@@ -275,18 +279,25 @@
             }
         }
 
+        let uc1Data = {};
+
         async function uc1LoadData() {
             try {
                 const data = await apiFetch('/api/usecase1/load-data');
+                uc1Data = data;
                 showOutput(data);
                 const select = document.getElementById("user-select");
-                select.innerHTML = '<option value="">-- Select --</option>';
-                data.forEach(user => {
+                select.innerHTML = '<option value="">-- Select user --</option>';
+                const select2 = document.getElementById("media-select");
+                select2.innerHTML = '<option value="">-- Select media --</option>';
+                Object.keys(data).forEach(userid => {
                     const option = document.createElement("option");
-                    option.value = user.id;
+                    option.value = userid;
+                    option.text = `User ID: ${userid}`;
                     select.appendChild(option);
                 });
             } catch (error) {
+                console.error("JS error:", error.message);
                 showOutput({
                     status: error.status ?? "N/A",
                     message: error.error?.message ?? "Unknown error"
@@ -296,18 +307,10 @@
 
         async function uc1GenerateTestData() {
             try {
-                apiFetch('/api/usecase1/generate', {
+                const data = await apiFetch('/api/usecase1/generate', {
                     method: 'POST'
-                }).then(data => {
-                    showOutput(data);
-                    const select = document.getElementById("user-select");
-                    select.innerHTML = '<option value="">-- Select --</option>';
-                    data['users'].forEach(user => {
-                        const option = document.createElement("option");
-                        option.value = user;
-                        select.appendChild(option);
-                    });
                 });
+                showOutput(data);
             } catch (error) {
                 showOutput({
                     status: error.status ?? "N/A",
@@ -315,6 +318,56 @@
                 });
             }
         }
+
+        async function uc1WatchMedia() {
+            const userId = document.getElementById("user-select").value;
+            const mediaId = document.getElementById("media-select").value;
+
+            if (!userId || !mediaId) {
+                alert("Please select both user and media");
+                return;
+            }
+
+            try {
+                const response = await apiFetch("/api/usecase1/watch", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        user_id: Number(userId),
+                        media_id: Number(mediaId)
+                    })
+                });
+
+                showOutput(response);
+
+            } catch (error) {
+                console.error("JS error:", error.message);
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.message ?? "Unknown error"
+                });
+            }
+        }
+
+        document.getElementById("user-select").addEventListener("change", e => {
+            const userId = e.target.value;
+            const mediaSelect = document.getElementById("media-select");
+
+            mediaSelect.innerHTML = '<option value="">-- Select media --</option>';
+            mediaSelect.disabled = true;
+
+            if (!userId) return;
+
+            const mediaList = uc1Data[userId];
+
+            mediaList.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.media_id;
+                option.textContent = item.media_id;
+                mediaSelect.appendChild(option);
+            });
+
+            mediaSelect.disabled = false;
+        });
 
     </script>
 </body>

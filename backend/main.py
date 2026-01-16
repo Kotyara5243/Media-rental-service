@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
+from pydantic import BaseModel
 
 from .databases.mariadb import mariadb
 from .databases.mariadb.data_generator import generate_random_data
@@ -200,12 +201,19 @@ async def uc1_load_data() :
     data = uc1_data_gen.load_data()
     return data
 
+class WatchRequest(BaseModel):
+    user_id: int
+    media_id: int
+
 @app.post("/api/usecase1/watch")
-async def uc1_watch_media(user_id: int | None, media_id: int | None) :
-    if user_id is None or media_id is None :
-        raise HTTPException(status_code=400, detail="user_id and media_id are required")
-    uc1_data_gen.watch_media(user_id, media_id)
-    return {"message": "Media watched successfully"}
+async def uc1_watch_media(request: WatchRequest):
+    try:
+        uc1_data_gen.watch_media(request.user_id, request.media_id)
+        return {"message": "Media watched successfully"}
+    except Exception as e:
+        print("Error in generate_data: "+str(e))
+        raise HTTPException(status_code=500, detail="Error generating data")
+    
 
 @app.post("/api/usecase1/generate")
 async def uc1_generate_test_data() :
