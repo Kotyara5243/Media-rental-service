@@ -59,6 +59,8 @@
         <div class="card">
             <h2>System Status</h2>
             <button onclick="checkHealth()">Check API Health</button>
+            <button onclick="testDB()">Check Database</button>
+            <button onclick="testErrorOutput()">Check Error output</button>
             <div id="health-status"></div>
         </div>
         
@@ -102,7 +104,7 @@
             if (!response.ok) {
                 throw {
                     status: response.status,
-                    error: body?.error ?? {
+                    error: body?.detail ?? {
                         code: "UNKNOWN_ERROR",
                         message: "Unexpected error"
                     }
@@ -113,39 +115,59 @@
         }
         
         function showOutput(data) {
-            document.getElementById('output').innerHTML = 
-                JSON.stringify(data, null, 2);
+            document.getElementById('output').innerHTML =
+                `<pre>${JSON.stringify(data, null, 2)}</pre>`;
         }
 
         async function checkHealth() {
             try {
-                apiFetch('/health').then(data => {
-                    document.getElementById('health-status').innerHTML = 
-                        `<p>Status: ${data.status}</p><p>Service: ${data.service}</p>`;
-                    showOutput(data);
-                });
+                const data = await apiFetch('/health');
+
+                document.getElementById('health-status').innerHTML = 
+                    `<p>Status: ${data.status}</p><p>Service: ${data.service}</p>`;
+
+                showOutput(data);
             } catch (error) {
-                showOutput({error: error.message});
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 
         async function testAPI() {
             try {
-                apiFetch('/api/health').then(data => {
-                    showOutput(data);
-                });
+                const data = await apiFetch('/api/health');
+                showOutput(data);
             } catch (error) {
-                showOutput({error: error.message});
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
+            }
+        }
+
+        async function testErrorOutput() {
+            try {
+                const data = await apiFetch('/api/test-error');
+                showOutput(data);
+            } catch (error) {
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
         
         async function testDB() {
             try {
-                apiFetch('/api/test-db').then(data => {
-                    showOutput(data);
-                });
+                const data = await apiFetch('/api/test-db');
+                showOutput(data);
             } catch (error) {
-                showOutput({error: error.message});
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 	// updated functions
@@ -154,11 +176,13 @@
             try {
                 const response = apiFetch('/api/add-sample-data', {
                     method: 'POST'
-                }).then(data => {
-                    showOutput(data);
                 });
+                showOutput(response);
             } catch (error) {
-                showOutput({error: error.message});
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 
@@ -167,11 +191,13 @@
             try {
                 const response = apiFetch('/api/generate-data', {
                     method: 'POST'
-                }).then(data => {
-                    showOutput(data);
                 });
+                showOutput(response);
             } catch (error) {
-                showOutput({error: error.message});
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 
@@ -216,46 +242,55 @@
                 document.getElementById('output').innerHTML = 
                     JSON.stringify(data, null, 2);
             } catch (error) {
-                document.getElementById('output').innerHTML = 'Error: ' + error.message;
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 
         async function showTables() {
             try {
-                apiFetch('/api/tables').then(data => {
-                    showOutput(data);
-                });
+                const response = await apiFetch('/api/tables');
+                showOutput(response);
             } catch (error) {
-                showOutput({error: error.message});
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 
         async function clearTables() {
             try {
-                apiFetch('/api/tables/clear', {
+                const response = await apiFetch('/api/tables/clear', {
                     method: 'POST'
-                }).then(data => {
-                    showOutput(data);
                 });
+                showOutput(response);
             } catch (error) {
-                showOutput({error: error.message});
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 
         async function uc1LoadData() {
             try {
-                apiFetch('/api/usecase1/relevant_ids').then(data => {
-                    showOutput(data);
-                    const select = document.getElementById("user-select");
-                    select.innerHTML = '<option value="">-- Select --</option>';
-                    data['users'].forEach(user => {
-                        const option = document.createElement("option");
-                        option.value = user.id;
-                        select.appendChild(option);
-                    });
+                const data = await apiFetch('/api/usecase1/load-data');
+                showOutput(data);
+                const select = document.getElementById("user-select");
+                select.innerHTML = '<option value="">-- Select --</option>';
+                data.forEach(user => {
+                    const option = document.createElement("option");
+                    option.value = user.id;
+                    select.appendChild(option);
                 });
             } catch (error) {
-                showOutput({error: error.message})
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 
@@ -274,7 +309,10 @@
                     });
                 });
             } catch (error) {
-                showOutput({error: error.message})
+                showOutput({
+                    status: error.status ?? "N/A",
+                    message: error.error?.message ?? "Unknown error"
+                });
             }
         }
 

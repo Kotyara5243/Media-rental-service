@@ -34,9 +34,25 @@ async def test_database():
             "result": result.get("1") if result else None
         }
     except Exception as e:
-        print("Error in test_database: "+e)
-        raise HTTPException(status_code=500, detail="Test database error: "+e)
+        print(f"Error in test_database: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "DB_TEST_FAILED",
+                "message": "Failed to execute test query on MariaDB"
+            }
+        )
     
+@app.get("/api/test-error")
+async def test_error():
+    raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "TEST_ERROR",
+                "message": "This is a test error"
+            }
+        )
+
 @app.post("/api/tables/clear")
 async def clear_tables():
     try:
@@ -47,7 +63,13 @@ async def clear_tables():
         }
     except Exception as e:
         print("Error in clear_tables: "+str(e))
-        raise HTTPException(status_code=500, detail="Clear database error: "+str(e))
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "CLEAR_DATABASE_ERROR",
+                "message": "Failed to clear database"
+            }
+        )
 
 @app.get("/api/tables")
 async def list_tables():
@@ -56,7 +78,14 @@ async def list_tables():
         
         return {"tables": tables, "count": len(tables)}
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error in list_tables: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "LIST_TABLES_FAILED",
+                "message": "Failed to list tables"
+            }
+        )
 
 @app.post("/api/add-data")
 async def add_data():
@@ -64,8 +93,14 @@ async def add_data():
         mariadb.add_sample_data()
         return {"message": "Sample data added successfully"}
     except Exception as e:
-        print("Error in add_data: "+str(e))
-        raise HTTPException(status_code=500, detail="Error adding sample data")
+        print(f"Error in add_data: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "ADD_DATA_FAILED",
+                "message": "Failed to add sample data"
+            }
+        )
 
         
 @app.post("/api/generate-data")
@@ -75,8 +110,14 @@ async def generate_data():
         generate_random_data()
         return {"message": "Sample data added successfully"}
     except Exception as e:
-        print("Error in generate_data: "+str(e))
-        raise HTTPException(status_code=500, detail="Error generating data")
+        print(f"Error in generate_data: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "GENERATE_DATA_FAILED",
+                "message": "Failed to generate random data"
+            }
+        )
 
 @app.get("/api/check-data")
 async def check_data():
@@ -144,7 +185,14 @@ async def check_data():
         return response
         
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error in check_data: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "CHECK_DATA_FAILED",
+                "message": "Failed to check data"
+            }
+        )
 
 
 @app.get("/api/usecase1/load-data")
