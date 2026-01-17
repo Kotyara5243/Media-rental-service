@@ -214,13 +214,3 @@ async def uc1_watch_media(request: WatchRequest):
         print("Error in generate_data: "+str(e))
         raise HTTPException(status_code=500, detail="Error generating data")
     
-
-@app.post("/api/usecase1/generate")
-async def uc1_generate_test_data() :
-    try:
-        mariadb.reset_all_tables()
-        uc1_data_gen.generate_test_data()
-        return {"message": "Test data added successfully"}
-    except Exception as e:
-        print("Error in generate_data: "+str(e))
-        raise HTTPException(status_code=500, detail="Error generating data")

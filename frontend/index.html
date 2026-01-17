@@ -67,7 +67,6 @@
         <div class="card">
             <h2> Use Case 1: </h2>
             <p>Student 1: Grigorii Didenko</p>
-            <button onclick="uc1GenerateTestData()">Generate test data</button>
             <button onclick="uc1LoadData()">Load use case data</button>
             <label for="user-select">Choose user:</label>
             <select id="user-select">
@@ -78,6 +77,7 @@
                 <option value="">-- Select media --</option>
             </select>
             <button id="submit-btn" onclick="uc1WatchMedia()">Watch media</button>
+            <div id="uc1-output"></div>
         </div>
         <div class="card">
             <h2> Use Case: Rent Media</h2>
@@ -338,6 +338,10 @@
                 });
 
                 showOutput(response);
+
+                document.getElementById("uc1-output").innerHTML = "<p>User " + uc1Data[userId].user_name + " is now watching " + 
+                    uc1Data[userId].available_media.find(m => m.media_id == mediaId).type + " " +
+                    uc1Data[userId].available_media.find(m => m.media_id == mediaId).media_name + ".</p>";
 
             } catch (error) {
                 console.error("JS error:", error.message);

@@ -568,6 +568,10 @@ def find_series_by_id(series_id: int) -> Series | None:
     row = find_by_id("Series", "series_id", series_id)
     return Series.from_row(row) if row else None
 
+def find_film_by_id(film_id: int) -> Film | None:
+    row = find_by_id("Film", "film_id", film_id)
+    return Film.from_row(row) if row else None
+
 def find_session_by_id(session_id: int) -> Session | None:
     row = find_by_id("Sessions", "session_id", session_id)
     return Session.from_row(row) if row else None

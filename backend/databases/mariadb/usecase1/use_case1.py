@@ -56,6 +56,27 @@ def load_data() :
         """
     )
 
+    media_type_rows = execute_select(
+        """
+        SELECT
+            m.media_id,
+            CASE
+                WHEN s.series_id IS NOT NULL THEN 'series'
+                WHEN f.film_id IS NOT NULL THEN 'film'
+                ELSE 'unknown'
+            END AS media_type
+        FROM Media m
+        LEFT JOIN Series s ON s.media_id = m.media_id
+        LEFT JOIN Film f ON f.media_id = m.media_id;
+        """
+    )
+
+    media_type_map = {
+        row["media_id"]: row["media_type"]
+        for row in media_type_rows
+    }
+
+
     print(str(select_result))
 
     result = defaultdict(lambda: {
@@ -70,24 +91,10 @@ def load_data() :
             "family_member": row["family_member"],
             "media_id": row["media_id"],
             "media_name": row["media_name"],
+            "type": media_type_map.get(row["media_id"], "unknown")
         })
 
     return dict(result)
 
-
-    # user_ids = []
-    # media_ids = []
-    # family_member_ids = []
-    
-    # for row in select_result :
-    #     user_ids.append(row["user_id"])
-    #     media_ids.append(row["media_id"])
-    #     family_member_ids.append(row["family_member_id"])
-
-    # return result
-
 def watch_media(user_id: int, media_id: int) :
-    """
-    Creates a session for the given user and media
-    """
     insert_watch_history(WatchHistory(None, user_id, media_id, datetime.now(), True))
