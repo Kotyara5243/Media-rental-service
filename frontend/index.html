@@ -80,11 +80,20 @@
             <button id="submit-btn" onclick="uc1WatchMedia()">Watch media</button>
         </div>
         <div class="card">
-            <h2> Use Case: Rent Media</h2>
+            <h2> Use Case 2: Rent Media</h2>
             <p>Student 2: Zhamilya Karzhassova</p>
-            <button onclick="testAPI()">Test API Connection</button>
-            <button onclick="testDB()">Test Database</button>
-            <button onclick="clearTables()">Clear Database</button>
+            <div style="margin: 8px 0;">
+                <label>Select User: 
+                    <select id="uc2-user-select" style="min-width: 200px;">
+                        <option value="">-- Select User --</option>
+                    </select>
+                </label>
+                <label style="margin-left: 10px;">Duration (days): <input id="uc2-duration" type="number" value="3" style="width: 80px;"></label>
+            </div>
+            <button onclick="uc2LoadUsers()">Load Users</button>
+            <button onclick="uc2LoadMedia()">Load Media</button>
+            <button onclick="uc2ShowRentals()">Show My Rentals</button>
+            <div id="uc2-media-list" style="margin-top: 10px;"></div>
         </div>
         <div class="card">
             <h2>Data Import</h2>
@@ -141,7 +150,7 @@
 
         async function testAPI() {
             try {
-                const data = await apiFetch('/api/health');
+                const data = await apiFetch('/api/test');
                 showOutput(data);
             } catch (error) {
                 showOutput({
@@ -178,7 +187,7 @@
 
         async function addData() {
             try {
-                const response = apiFetch('/api/add-sample-data', {
+                const response = await apiFetch('/api/add-data', {
                     method: 'POST'
                 });
                 showOutput(response);
@@ -193,7 +202,7 @@
         async function generateData() {
             document.getElementById('output').innerHTML = 'Generating data...';
             try {
-                const response = apiFetch('/api/generate-data', {
+                const response = await apiFetch('/api/generate-data', {
                     method: 'POST'
                 });
                 showOutput(response);
@@ -211,27 +220,9 @@
                 const data = await response.json();
                 
                 let html = '<h3> Current Data</h3>';
-                
-                // Use the new field names from your backend
                 html += '<p>Total Users: ' + (data.total_users || 0) + '</p>';
                 html += '<p>Total Media: ' + (data.total_media || 0) + '</p>';
                 html += '<p>Total Rentals: ' + (data.total_rentals || 0) + '</p>';
-                
-                // Check if Zhami exists
-                if (data.zhami) {
-                    html += '<h4> Test User:</h4>';
-                    html += '<p>Name: ' + data.zhami.name + ' (ID: ' + data.zhami.user_id + ')</p>';
-                    html += '<p>Email: ' + data.zhami.email + '</p>';
-                    html += '<p>Location: ' + data.zhami.city + '</p>';
-                }
-                
-                // Check if Zhami has a rental
-                if (data.zhami_rental) {
-                    html += '<h4>Active Rental:</h4>';
-                    html += '<p>Movie: ' + data.zhami_rental.movie + '</p>';
-                    html += '<p>Rented on: ' + data.zhami_rental.rented_on + '</p>';
-                    html += '<p>Price: $' + data.zhami_rental.price + '</p>';
-                }
                 
                 document.getElementById('output').innerHTML = html;
             } catch (error) {
@@ -319,55 +310,101 @@
             }
         }
 
-        async function uc1WatchMedia() {
-            const userId = document.getElementById("user-select").value;
-            const mediaId = document.getElementById("media-select").value;
-
-            if (!userId || !mediaId) {
-                alert("Please select both user and media");
-                return;
-            }
-
+        // Use Case 2
+        async function uc2LoadUsers() {
             try {
-                const response = await apiFetch("/api/usecase1/watch", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        user_id: Number(userId),
-                        media_id: Number(mediaId)
-                    })
-                });
-
-                showOutput(response);
-
+                const data = await apiFetch('/api/usecase2/users');
+                const select = document.getElementById('uc2-user-select');
+                if (!data.users || data.users.length === 0) {
+                    select.innerHTML = '<option value="">No users available</option>';
+                    return;
+                }
+                select.innerHTML = '<option value="">-- Select User --</option>' + 
+                    data.users.map(u => `<option value="${u.user_id}">${u.user_name} (ID: ${u.user_id})</option>`).join('');
+                showOutput({message: `Loaded ${data.count} users`});
             } catch (error) {
-                console.error("JS error:", error.message);
                 showOutput({
-                    status: error.status ?? "N/A",
-                    message: error.message ?? "Unknown error"
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Failed to load users'
                 });
             }
         }
 
-        document.getElementById("user-select").addEventListener("change", e => {
-            const userId = e.target.value;
-            const mediaSelect = document.getElementById("media-select");
+        async function uc2LoadMedia() {
+            try {
+                const data = await apiFetch('/api/usecase2/media');
+                const target = document.getElementById('uc2-media-list');
+                if (!data.media || data.media.length === 0) {
+                    target.innerHTML = '<p>No media available.</p>';
+                    return;
+                }
+                target.innerHTML = data.media.map(m => `
+                    <div style="margin:6px 0;">
+                        <strong>${m.media_name}</strong> (${m.genre}, ${m.prod_year}) - $${m.cost_per_day}/day
+                        <button onclick="uc2Rent(${m.media_id}, '${m.media_name.replace(/'/g, "\\'")}', ${m.cost_per_day})">Rent</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Failed to load media'
+                });
+            }
+        }
 
-            mediaSelect.innerHTML = '<option value="">-- Select media --</option>';
-            mediaSelect.disabled = true;
+        async function uc2Rent(mediaId, name, costPerDay) {
+            const userId = parseInt(document.getElementById('uc2-user-select').value || '0', 10);
+            const duration = parseInt(document.getElementById('uc2-duration').value || '0', 10);
+            const cost = costPerDay * duration;
 
-            if (!userId) return;
+            if (!userId) {
+                alert('Please select a user first');
+                return;
+            }
+            if (!duration) {
+                alert('Please provide valid duration');
+                return;
+            }
 
-            const mediaList = uc1Data[userId];
+            const confirmed = confirm(`Rent ${name} for ${duration} day(s)? Cost: $${cost}`);
+            if (!confirmed) return;
 
-            mediaList.forEach(item => {
-                const option = document.createElement("option");
-                option.value = item.media_id;
-                option.textContent = item.media_id;
-                mediaSelect.appendChild(option);
-            });
+            try {
+                const result = await apiFetch(`/api/usecase2/rent?user_id=${userId}&media_id=${mediaId}&duration_days=${duration}`, { method: 'POST' });
+                showOutput(result);
+            } catch (error) {
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Failed to rent media'
+                });
+            }
+        }
 
-            mediaSelect.disabled = false;
-        });
+        async function uc2ShowRentals() {
+            const userId = parseInt(document.getElementById('uc2-user-select').value || '0', 10);
+            if (!userId) {
+                alert('Please select a user first');
+                return;
+            }
+            try {
+                const data = await apiFetch(`/api/usecase2/user/${userId}/rentals`);
+                const target = document.getElementById('uc2-media-list');
+                if (!data.rentals || data.rentals.length === 0) {
+                    target.innerHTML = '<p>No rentals for this user.</p>';
+                    return;
+                }
+                target.innerHTML = data.rentals.map(r => `
+                    <div style="margin:6px 0;">
+                        <strong>${r.media_name}</strong> - $${r.cost} for ${r.duration} day(s) on ${new Date(r.date_of_rent).toLocaleDateString()}
+                    </div>
+                `).join('');
+            } catch (error) {
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Failed to load rentals'
+                });
+            }
+        }
 
     </script>
 </body>

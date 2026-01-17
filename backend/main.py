@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from .databases.mariadb import mariadb
 from .databases.mariadb.data_generator import generate_random_data
 from .databases.mariadb.usecase1 import use_case1 as uc1_data_gen
+from .databases.mariadb.usecase2 import use_case2 as uc2_logic
 
 app = FastAPI(title="Media Rental Service", version="1.0.0") 
 
@@ -122,6 +123,7 @@ async def generate_data():
 
 @app.get("/api/check-data")
 async def check_data():
+    """Lightweight data sanity check: returns table counts."""
     try:
         import pymysql
         connection = pymysql.connect(
@@ -132,59 +134,25 @@ async def check_data():
             port=3306,
             cursorclass=pymysql.cursors.DictCursor
         )
-        
+
         with connection.cursor() as cursor:
-            # Get total counts
             cursor.execute("SELECT COUNT(*) as count FROM Users")
             total_users = cursor.fetchone()['count']
-            
+
             cursor.execute("SELECT COUNT(*) as count FROM Media")
             total_media = cursor.fetchone()['count']
-            
+
             cursor.execute("SELECT COUNT(*) as count FROM Sessions")
             total_rentals = cursor.fetchone()['count']
-            
-            cursor.execute("SELECT * FROM Users WHERE user_name = 'Zhami'")
-            zhami = cursor.fetchone()
-            
-            # Get Zhami's rental if exists
-            rental = None
-            if zhami:
-                cursor.execute("""
-                    SELECT m.media_name, s.date_of_rent, s.cost 
-                    FROM Sessions s 
-                    JOIN Media m ON s.media_id = m.media_id 
-                    WHERE s.user_id = %s
-                """, (zhami['user_id'],))
-                rental = cursor.fetchone()
-        
+
         connection.close()
-        
-        response = {
+
+        return {
             "total_users": total_users,
             "total_media": total_media,
             "total_rentals": total_rentals
         }
-        
-        # Add Zhami info if found
-        if zhami:
-            response["zhami"] = {
-                "user_id": zhami['user_id'],
-                "name": zhami['user_name'],
-                "email": zhami['email'],
-                "city": zhami['location']
-            }
-        
-        # Add rental info if found
-        if rental:
-            response["zhami_rental"] = {
-                "movie": rental['media_name'],
-                "rented_on": rental['date_of_rent'].strftime("%Y-%m-%d"),
-                "price": rental['cost']
-            }
-        
-        return response
-        
+
     except Exception as e:
         print(f"Error in check_data: {e}")
         raise HTTPException(
@@ -196,6 +164,7 @@ async def check_data():
         )
 
 
+ # Use Case 1
 @app.get("/api/usecase1/load-data")
 async def uc1_load_data() :
     data = uc1_data_gen.load_data()
@@ -224,3 +193,70 @@ async def uc1_generate_test_data() :
     except Exception as e:
         print("Error in generate_data: "+str(e))
         raise HTTPException(status_code=500, detail="Error generating data")
+
+
+# Use Case 2: Rent Media
+
+@app.post("/api/usecase2/rent")
+async def uc2_rent_media(user_id: int, media_id: int, duration_days: int):
+    try:
+        return uc2_logic.rent_media(user_id, media_id, duration_days)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error in uc2_rent_media: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "UC2_RENT_FAILED",
+                "message": "Failed to rent media"
+            }
+        )
+
+
+@app.get("/api/usecase2/media")
+async def uc2_get_media():
+    try:
+        media = uc2_logic.get_all_media()
+        return {"media": media, "count": len(media)}
+    except Exception as e:
+        print(f"Error in uc2_get_media: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "UC2_MEDIA_FAILED",
+                "message": "Failed to fetch media"
+            }
+        )
+
+
+@app.get("/api/usecase2/user/{user_id}/rentals")
+async def uc2_get_user_rentals(user_id: int):
+    try:
+        rentals = uc2_logic.get_user_rentals(user_id)
+        return {"rentals": rentals, "count": len(rentals)}
+    except Exception as e:
+        print(f"Error in uc2_get_user_rentals: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "UC2_RENTALS_FAILED",
+                "message": "Failed to fetch rentals"
+            }
+        )
+
+
+@app.get("/api/usecase2/users")
+async def uc2_get_users():
+    try:
+        users = uc2_logic.get_all_users()
+        return {"users": users, "count": len(users)}
+    except Exception as e:
+        print(f"Error in uc2_get_users: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "UC2_USERS_FAILED",
+                "message": "Failed to fetch users"
+            }
+        )
