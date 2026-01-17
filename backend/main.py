@@ -236,3 +236,19 @@ async def uc2_get_user_rentals(user_id: int):
                 "message": "Failed to fetch rentals"
             }
         )
+
+
+@app.get("/api/usecase2/users")
+async def uc2_get_users():
+    try:
+        users = uc2_logic.get_all_users()
+        return {"users": users, "count": len(users)}
+    except Exception as e:
+        print(f"Error in uc2_get_users: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "UC2_USERS_FAILED",
+                "message": "Failed to fetch users"
+            }
+        )

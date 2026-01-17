@@ -82,3 +82,13 @@ def get_user_rentals(user_id: int) -> list:
     ORDER BY s.date_of_rent DESC
     """
     return execute_select(query, (user_id,))
+
+
+def get_all_users() -> list:
+    """Get all users"""
+    query = """
+    SELECT u.user_id, u.user_name, u.email
+    FROM Users u
+    ORDER BY u.user_name
+    """
+    return execute_select(query, ())

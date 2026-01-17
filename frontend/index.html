@@ -79,9 +79,14 @@
             <h2> Use Case 2: Rent Media</h2>
             <p>Student 2: Zhamilya Karzhassova</p>
             <div style="margin: 8px 0;">
-                <label>User ID: <input id="uc2-user-id" type="number" value="1" style="width: 80px;"></label>
+                <label>Select User: 
+                    <select id="uc2-user-select" style="min-width: 200px;">
+                        <option value="">-- Select User --</option>
+                    </select>
+                </label>
                 <label style="margin-left: 10px;">Duration (days): <input id="uc2-duration" type="number" value="3" style="width: 80px;"></label>
             </div>
+            <button onclick="uc2LoadUsers()">Load Users</button>
             <button onclick="uc2LoadMedia()">Load Media</button>
             <button onclick="uc2ShowRentals()">Show My Rentals</button>
             <div id="uc2-media-list" style="margin-top: 10px;"></div>
@@ -303,6 +308,25 @@
         }
 
         // Use Case 2
+        async function uc2LoadUsers() {
+            try {
+                const data = await apiFetch('/api/usecase2/users');
+                const select = document.getElementById('uc2-user-select');
+                if (!data.users || data.users.length === 0) {
+                    select.innerHTML = '<option value="">No users available</option>';
+                    return;
+                }
+                select.innerHTML = '<option value="">-- Select User --</option>' + 
+                    data.users.map(u => `<option value="${u.user_id}">${u.user_name} (ID: ${u.user_id})</option>`).join('');
+                showOutput({message: `Loaded ${data.count} users`});
+            } catch (error) {
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Failed to load users'
+                });
+            }
+        }
+
         async function uc2LoadMedia() {
             try {
                 const data = await apiFetch('/api/usecase2/media');
@@ -326,12 +350,16 @@
         }
 
         async function uc2Rent(mediaId, name, costPerDay) {
-            const userId = parseInt(document.getElementById('uc2-user-id').value || '0', 10);
+            const userId = parseInt(document.getElementById('uc2-user-select').value || '0', 10);
             const duration = parseInt(document.getElementById('uc2-duration').value || '0', 10);
             const cost = costPerDay * duration;
 
-            if (!userId || !duration) {
-                alert('Please provide valid user id and duration');
+            if (!userId) {
+                alert('Please select a user first');
+                return;
+            }
+            if (!duration) {
+                alert('Please provide valid duration');
                 return;
             }
 
@@ -341,7 +369,6 @@
             try {
                 const result = await apiFetch(`/api/usecase2/rent?user_id=${userId}&media_id=${mediaId}&duration_days=${duration}`, { method: 'POST' });
                 showOutput(result);
-                await uc2ShowRentals();
             } catch (error) {
                 showOutput({
                     status: error.status ?? 'N/A',
@@ -351,9 +378,9 @@
         }
 
         async function uc2ShowRentals() {
-            const userId = parseInt(document.getElementById('uc2-user-id').value || '0', 10);
+            const userId = parseInt(document.getElementById('uc2-user-select').value || '0', 10);
             if (!userId) {
-                alert('Please provide a valid user id');
+                alert('Please select a user first');
                 return;
             }
             try {
