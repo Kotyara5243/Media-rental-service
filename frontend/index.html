@@ -193,7 +193,7 @@
         async function generateData() {
             document.getElementById('output').innerHTML = 'Generating data...';
             try {
-                const response = apiFetch('/api/generate-data', {
+                const response = await apiFetch('/api/generate-data', {
                     method: 'POST'
                 });
                 showOutput(response);
@@ -290,10 +290,10 @@
                 select.innerHTML = '<option value="">-- Select user --</option>';
                 const select2 = document.getElementById("media-select");
                 select2.innerHTML = '<option value="">-- Select media --</option>';
-                Object.keys(data).forEach(userid => {
+                Object.keys(data).forEach(userId => {
                     const option = document.createElement("option");
-                    option.value = userid;
-                    option.text = `User ID: ${userid}`;
+                    option.value = userId;
+                    option.text = data[userId].user_name;
                     select.appendChild(option);
                 });
             } catch (error) {
@@ -357,12 +357,12 @@
 
             if (!userId) return;
 
-            const mediaList = uc1Data[userId];
+            const mediaList = uc1Data[userId].available_media;
 
             mediaList.forEach(item => {
                 const option = document.createElement("option");
                 option.value = item.media_id;
-                option.textContent = item.media_id;
+                option.textContent = item.media_name + " (shared by: " + item.family_member + ")";
                 mediaSelect.appendChild(option);
             });
 

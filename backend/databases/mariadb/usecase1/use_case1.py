@@ -32,21 +32,25 @@ def generate_test_data() :
 def load_data() :
     """
     Gets all users that are in a family and a family member has an active session
-    {"user_id": [ { "family_member_id": ..., "media_id": ...}, ... ], ... }
+    {"user_id": {"user_name" : ..., "available_media" : [ { "family_member": ..., "media_id": ..., "media_name": ...}, ... ], ... }}
     """
 
     select_result = execute_select(
         """
         SELECT
             u.user_id,
+            u.user_name,
             s.session_id,
             s.media_id,
-            s.user_id AS family_member_id
+            m.media_name,
+            u_ref.user_name AS family_member
         FROM Users u
         JOIN Users u_ref
             ON u.family_id = u_ref.family_id
         JOIN Sessions s
             ON s.user_id = u_ref.user_id
+        JOIN Media m
+            ON m.media_id = s.media_id
         WHERE u.user_id <> s.user_id 
             AND DATE_ADD(s.date_of_rent, INTERVAL s.duration HOUR) > NOW();
         """
@@ -54,13 +58,18 @@ def load_data() :
 
     print(str(select_result))
 
-    result = defaultdict(list)
+    result = defaultdict(lambda: {
+        "user_name": None,
+        "available_media": []
+    })
 
     for row in select_result:
         user_id = row["user_id"]
-        result[user_id].append({
-            "family_member_id": row["family_member_id"],
+        result[user_id]["user_name"] = row["user_name"]
+        result[user_id]["available_media"].append({
+            "family_member": row["family_member"],
             "media_id": row["media_id"],
+            "media_name": row["media_name"],
         })
 
     return dict(result)
