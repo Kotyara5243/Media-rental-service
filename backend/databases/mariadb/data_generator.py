@@ -79,7 +79,7 @@ def generate_media() :
         prod_year = random_date(29200).year
         descr = ''.join(random.choices(string.ascii_letters + string.digits, k=random.randrange(1, 50)))
         location = random.choice(countries_pool)
-        cost = random.randint(1, 20)
+        cost = random.randint(1, 8)
         insert_media( Media(None, media_name, genre, prod_year, descr, location, cost) )
 
 def generate_series_films() :
