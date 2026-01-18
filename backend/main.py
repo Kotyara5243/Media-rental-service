@@ -146,12 +146,16 @@ async def check_data():
             cursor.execute("SELECT COUNT(*) as count FROM Sessions")
             total_rentals = cursor.fetchone()['count']
 
+            cursor.execute("SELECT COUNT(*) as count FROM WatchHistory")
+            total_watch_history = cursor.fetchone()['count']
+
         connection.close()
 
         return {
             "total_users": total_users,
             "total_media": total_media,
-            "total_rentals": total_rentals
+            "total_rentals": total_rentals,
+            "total_watch_history": total_watch_history
         }
 
     except Exception as e:
@@ -249,6 +253,37 @@ async def uc2_get_users():
             detail={
                 "code": "UC2_USERS_FAILED",
                 "message": "Failed to fetch users"
+            }
+        )
+
+# Migration Endpoints
+@app.post("/api/migrate-to-nosql")
+async def migrate_to_nosql():
+    try:
+        mongo.migrate_from_mariadb()
+        return {"message": "Migration to NoSQL completed successfully"}
+    except Exception as e:
+        print(f"Error in migrate_to_nosql: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MIGRATION_FAILED",
+                "message": "Failed to migrate data to NoSQL"
+            }
+        )
+    
+@app.post("/api/switch-to-sql")
+async def switch_to_sql():
+    try:
+        
+        return {"message": "Switched back to SQL database successfully"}
+    except Exception as e:
+        print(f"Error in switch_to_sql: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "SWITCH_SQL_FAILED",
+                "message": "Failed to switch back to SQL database"
             }
         )
 
