@@ -5,12 +5,11 @@ Using RAW PyMongo queries
 NOSQL DESIGN DECISIONS:
 1. DENORMALIZATION: Embed related data to eliminate JOINs
 2. COLLECTIONS: users, media, sessions, watch_history
-3. EMBEDDED DOCUMENTS: family data in users, film/series details in media
+3. EMBEDDED DOCUMENTS: film/series details in media
 4. N-SIDE REFERENCING: Store array of IDs for friends/devices
 5. NO FOREIGN KEYS: Use embedded documents instead
 """
 
-from collections import defaultdict
 from datetime import datetime, date
 from typing import List, Dict, Any, Optional
 from .mongodb_connection import get_collection, list_all_collections
@@ -18,7 +17,7 @@ from bson.objectid import ObjectId
 from ..mariadb import mariadb
 
 
-COLLECTIONS = ['users', 'media', 'sessions', 'watch_history', 'counters']
+COLLECTIONS = ['users', 'media', 'sessions', 'watch_history', 'families', 'counters']
 
 def convert_dates_to_datetime(obj: Any) -> Any:
     """
@@ -58,7 +57,7 @@ def reset_all_collections():
     get_collection('sessions').create_index('session_id', unique=True)
     get_collection('sessions').create_index('user.user_id')
     get_collection('watch_history').create_index('user.user_id')
-    # get_collection('family').create_index('user.user_id')
+    get_collection('families').create_index('families.family_id')
     
     print("All MongoDB collections reset")
 
@@ -66,10 +65,10 @@ def get_all_collections() :
     return list_all_collections()
 
 def insert_user(user_name: str, email: str, birthday: datetime, location: str, 
-                bio: str, family_id: int, family_type: str, family_creation_date: datetime,
+                bio: str, family_id: int,
                 devices: List[Dict] = None, friends: List[int] = None) -> int:
     """
-    Insert user with EMBEDDED family data and devices.
+    Insert user with EMBEDDED and devices.
     NO foreign keys - denormalized design.
     
     Returns: user_id
@@ -85,9 +84,7 @@ def insert_user(user_name: str, email: str, birthday: datetime, location: str,
         'location': location,
         'bio': bio,
         'family': { 
-            'family_id': family_id,
-            'family_type': family_type,
-            'creation_date': family_creation_date
+            'family_id': family_id
         },
         'devices': devices or [],  
         'friends': friends or [],  
@@ -249,57 +246,24 @@ def insert_watch_history(user_id: int, media_id: int, family_watch: bool) -> int
     watch_history.insert_one(watch_doc)
     return watch_id
 
-
-def get_family_shared_media(user_id: int) -> List[Dict]:
+def insert_family(family_type: str, creation_date: datetime, users: List[Dict] = None, ) -> int:
+    """
+    Family with denormalized user data.
+    """
+    families = get_collection('families')
     
-    users = get_collection('users')
-    sessions = get_collection('sessions')
+    family_id = get_next_sequence('watch_history_id')
+  
+    family_doc = {
+        'family_id': family_id,
+        'family_type': family_type,
+        'users': users or [],
+        'creation_date': creation_date,
+        'created_at': datetime.now()
+    }
     
-    user = users.find_one({'user_id': user_id}, {'family.family_id': 1})
-    if not user:
-        return []
-    
-    family_id = user['family']['family_id']
-    
-    users = get_collection('users')
-    sessions = get_collection('sessions')
-    
-    user = users.find_one({'user_id': user_id}, {'family.family_id': 1})
-    if not user:
-        return []
-    
-    family_id = user['family']['family_id']
-    
-    family_members = list(users.find(
-        {'family.family_id': family_id, 'user_id': {'$ne': user_id}},
-        {'user_id': 1, 'user_name': 1}
-    ))
-    
-    family_member_ids = [m['user_id'] for m in family_members]
-    member_names = {m['user_id']: m['user_name'] for m in family_members}
-
-    current_time = datetime.now()
-    
-    result = []
-    active_sessions = sessions.find({
-        'user.user_id': {'$in': family_member_ids}
-    }, {'_id': 0})
-    
-    for session in active_sessions:
-        rental_end = session['date_of_rent']
-        from datetime import timedelta
-        rental_end = rental_end + timedelta(hours=session['duration'])
-        
-        if rental_end > current_time:
-            result.append({
-                'family_member': member_names.get(session['user']['user_id']),
-                'media_id': session['media']['media_id'],
-                'media_name': session['media']['media_name'],
-                'type': session['media']['type']
-            })
-    
-    return result
-
+    families.insert_one(family_doc)
+    return family_id
 
 # DATA GENERATION FOR TESTING
 
@@ -315,8 +279,8 @@ def generate_sample_data():
         location="Almaty",
         bio="Film enthusiast",
         family_id=1,
-        family_type="Movie Lovers",
-        family_creation_date=datetime(2025, 11, 7),
+        # family_type="Movie Lovers",
+        # family_creation_date=datetime(2025, 11, 7),
         devices=[
             {'device_id': 1, 'device_name': 'iPhone 15', 'registration_date': datetime(2025, 1, 1)},
             {'device_id': 2, 'device_name': 'MacBook Pro', 'registration_date': datetime(2025, 2, 1)}
@@ -331,8 +295,8 @@ def generate_sample_data():
         location="Moscow",
         bio="Loves Sci-Fi movies",
         family_id=1,
-        family_type="Movie Lovers",
-        family_creation_date=datetime(2025, 11, 7),
+        # family_type="Movie Lovers",
+        # family_creation_date=datetime(2025, 11, 7),
         devices=[{'device_id': 3, 'device_name': 'Samsung Galaxy', 'registration_date': datetime(2025, 3, 1)}],
         friends=[1]
     )
@@ -344,8 +308,8 @@ def generate_sample_data():
         location="Berlin",
         bio="Drama fan",
         family_id=2,
-        family_type="Couple",
-        family_creation_date=datetime(2025, 10, 1),
+        # family_type="Couple",
+        # family_creation_date=datetime(2025, 10, 1),
         devices=[],
         friends=[1, 2]
     )
@@ -391,7 +355,7 @@ def generate_sample_data():
     insert_watch_history(user2, media2, family_watch=False)
     
     print("✓ Sample data generated in MongoDB")
-    print(f"  - Users: 3 (with embedded family, devices)")
+    print(f"  - Users: 3 (with embedded devices)")
     print(f"  - Media: 3 (with embedded film/series details)")
     print(f"  - Sessions: 2 (with embedded user/media data)")
     print(f"  - Watch History: 2 (with embedded user/media data)")

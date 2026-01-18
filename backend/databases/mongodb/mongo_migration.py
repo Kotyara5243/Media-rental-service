@@ -24,6 +24,9 @@ def migrate_from_sql() -> Dict[str, Any]:
         
         watch = _migrate_watch_history()
         print(f" WatchHistory migrated: {watch}")
+
+        families = _migrate_family()
+        print(f" Families migrated: {families}")
         
         print("="*60 + "\n")
         
@@ -73,7 +76,6 @@ def _migrate_users() -> int:
         count = 0
         for u in users_data:
             u = convert_dates_to_datetime(u)
-            fam = families.get(u['family_id'], {})
             users_coll.insert_one({
                 'user_id': u['user_id'],
                 'user_name': u['user_name'],
@@ -81,7 +83,7 @@ def _migrate_users() -> int:
                 'birthday': u['birthday'],
                 'location': u['location'],
                 'bio': u['bio'],
-                'family': {'family_id': fam.get('family_id'), 'family_type': fam.get('family_type')},
+                'family': u['family_id'],
                 'devices': devices_by_user.get(u['user_id'], []),
                 'friends': friends_by_user.get(u['user_id'], [])
             })
@@ -219,4 +221,37 @@ def _migrate_watch_history() -> int:
         return count
     except Exception as e:
         print(f"   [WatchHistory] Migration error: {str(e)}")
+        raise
+
+def _migrate_family() -> int:
+    try:
+        families_coll = get_collection('families')
+        count = 0
+        
+        families_data = mariadb.execute_select("SELECT * FROM Family", ())
+        print(f"  [Families] Found {len(families_data)} families")
+
+        user_data = mariadb.execute_select("SELECT * FROM Users", ())
+        print(f"  [Families] Found {len(user_data)} users")
+        users_by_family = {}
+        for u in user_data:
+            uid = u['family_id']
+            if uid not in users_by_family:
+                users_by_family[uid] = []
+            users_by_family[uid].append({'user_id': u['user_id'], 'user_name': u['user_name'], 'email': u['email']})
+        
+        for f in families_data:
+            f = convert_dates_to_datetime(f)
+            families_coll.insert_one({
+                'family_id': f['family_id'],
+                'family_type': f['family_type'],
+                'users': users_by_family.get(f['family_id'], []),
+                'creation_date': f['creation_date']
+            })
+            count += 1
+        
+        get_collection('counters').update_one({'_id': 'family_id'}, {'$set': {'seq': count}}, upsert=True)
+        return count
+    except Exception as e:
+        print(f"   [Families] Migration error: {str(e)}")
         raise
