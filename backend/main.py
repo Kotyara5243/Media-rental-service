@@ -144,12 +144,16 @@ async def check_data():
             cursor.execute("SELECT COUNT(*) as count FROM Sessions")
             total_rentals = cursor.fetchone()['count']
 
+            cursor.execute("SELECT COUNT(*) as count FROM WatchHistory")
+            total_watch_history = cursor.fetchone()['count']
+
         connection.close()
 
         return {
             "total_users": total_users,
             "total_media": total_media,
-            "total_rentals": total_rentals
+            "total_rentals": total_rentals,
+            "total_watch_history": total_watch_history
         }
 
     except Exception as e:
@@ -250,5 +254,182 @@ async def uc2_get_users():
             detail={
                 "code": "UC2_USERS_FAILED",
                 "message": "Failed to fetch users"
+            }
+        )
+
+
+# MONGODB ENDPOINTS (NoSQL Implementation)
+
+@app.get("/api/mongodb/test")
+async def test_mongodb():
+    try:
+        from .databases.mongodb.mongodb_connection import get_mongodb_connection
+        db = get_mongodb_connection()
+        db.command('ping')
+        return {
+            "status": "Connected to MongoDB",
+            "database": db.name
+        }
+    except Exception as e:
+        print(f"Error in test_mongodb: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_CONNECTION_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+@app.post("/api/mongodb/generate-data")
+async def mongodb_generate_data():
+    try:
+        mongo.generate_sample_data()
+        stats = mongo.get_database_stats()
+        return {
+            "message": "MongoDB sample data generated successfully",
+            "stats": stats
+        }
+    except Exception as e:
+        print(f"Error in mongodb_generate_data: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_GENERATE_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+@app.get("/api/mongodb/stats")
+async def mongodb_stats():
+    try:
+        stats = mongo.get_database_stats()
+        return {"stats": stats}
+    except Exception as e:
+        print(f"Error in mongodb_stats: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_STATS_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+@app.post("/api/mongodb/clear")
+async def mongodb_clear():
+    try:
+        mongo.reset_all_collections()
+        return {"message": "MongoDB collections cleared successfully"}
+    except Exception as e:
+        print(f"Error in mongodb_clear: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_CLEAR_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+# MongoDB Use Case 2: Rent Media
+@app.post("/api/mongodb/usecase2/rent")
+async def mongodb_uc2_rent(user_id: int, media_id: int, duration_days: int):
+    try:
+        session = mongo.insert_rental_session(user_id, media_id, duration_days)
+        return session
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error in mongodb_uc2_rent: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_RENT_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+@app.get("/api/mongodb/usecase2/media")
+async def mongodb_uc2_get_media():
+    try:
+        media = mongo.get_all_media()
+        return {"media": media, "count": len(media)}
+    except Exception as e:
+        print(f"Error in mongodb_uc2_get_media: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_MEDIA_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+@app.get("/api/mongodb/usecase2/users")
+async def mongodb_uc2_get_users():
+    try:
+        users = mongo.get_all_users()
+        return {"users": users, "count": len(users)}
+    except Exception as e:
+        print(f"Error in mongodb_uc2_get_users: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_USERS_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+@app.get("/api/mongodb/usecase2/user/{user_id}/rentals")
+async def mongodb_uc2_get_rentals(user_id: int):
+    try:
+        rentals = mongo.get_user_rentals(user_id)
+        return {"rentals": rentals, "count": len(rentals)}
+    except Exception as e:
+        print(f"Error in mongodb_uc2_get_rentals: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_RENTALS_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+# MongoDB Use Case 1: Watch Media
+@app.post("/api/mongodb/usecase1/watch")
+async def mongodb_uc1_watch(user_id: int, media_id: int, family_watch: bool = True):
+    try:
+        watch_id = mongo.insert_watch_history(user_id, media_id, family_watch)
+        return {"message": "Watch history recorded", "watch_id": watch_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error in mongodb_uc1_watch: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_WATCH_FAILED",
+                "message": str(e)
+            }
+        )
+
+
+@app.get("/api/mongodb/usecase1/family-media/{user_id}")
+async def mongodb_uc1_family_media(user_id: int):
+    try:
+        media = mongo.get_family_shared_media(user_id)
+        return {"media": media, "count": len(media)}
+    except Exception as e:
+        print(f"Error in mongodb_uc1_family_media: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_FAMILY_MEDIA_FAILED",
+                "message": str(e)
             }
         )

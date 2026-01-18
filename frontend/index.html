@@ -98,6 +98,19 @@
             <button onclick="checkData()">Check Data</button>
             <button onclick="showTables()">Show Database</button>
         </div>
+
+        <div class="card">
+            <h2>MongoDB - NoSQL Implementation</h2>
+            <p><strong>Migration:</strong> Transform SQL data to MongoDB collections</p>
+            <button onclick="testMongoDB()">Test MongoDB Connection</button>
+            <button onclick="mongodbMigrate()">Migrate SQL → MongoDB</button>
+            <button onclick="mongodbStats()">Check MongoDB Stats</button>
+            <div id="mongodb-status" style="margin-top: 10px;"></div>
+        </div>
+            <button onclick="generateData()">Generate random data</button>
+            <button onclick="checkData()">Check Data</button>
+            <button onclick="showTables()">Show Database</button>
+        </div>
         <div id="output" class="output">Output will appear here...</div>
     </div>
     
@@ -219,6 +232,7 @@
                 html += '<p>Total Users: ' + (data.total_users || 0) + '</p>';
                 html += '<p>Total Media: ' + (data.total_media || 0) + '</p>';
                 html += '<p>Total Rentals: ' + (data.total_rentals || 0) + '</p>';
+                html += '<p>Total Watch History: ' + (data.total_watch_history || 0) + '</p>';
                 
                 document.getElementById('output').innerHTML = html;
             } catch (error) {
@@ -399,6 +413,72 @@
                 showOutput({
                     status: error.status ?? 'N/A',
                     message: error.error?.message ?? 'Failed to load rentals'
+                });
+            }
+        }
+
+        // MONGODB FUNCTIONS
+
+        async function testMongoDB() {
+            try {
+                const data = await apiFetch('/api/mongodb/test');
+                document.getElementById('mongodb-status').innerHTML = 
+                    `<p>✓ Connected: ${data.database}</p>`;
+                showOutput(data);
+            } catch (error) {
+                document.getElementById('mongodb-status').innerHTML = 
+                    `<p>✗ Connection failed</p>`;
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'MongoDB connection failed'
+                });
+            }
+        }
+
+        async function mongodbMigrate() {
+            if (!confirm('This will:\n1. Clear all MongoDB collections\n2. Migrate all SQL data to MongoDB\n3. Transform data to denormalized format\n\nProceed?')) {
+                return;
+            }
+
+            document.getElementById('mongodb-status').innerHTML = 
+                '<p style="color: blue;">Migrating data... This may take a moment...</p>';
+
+            try {
+                const data = await apiFetch('/api/mongodb/migrate-from-sql', {
+                    method: 'POST'
+                });
+                
+                document.getElementById('mongodb-status').innerHTML = 
+                    `<p style="color: green;">✓ Migration Complete!</p>
+                     <p>Users: ${data.details.users}</p>
+                     <p>Media: ${data.details.media}</p>
+                     <p>Sessions: ${data.details.sessions}</p>
+                     <p>WatchHistory: ${data.details.watch_history}</p>`;
+                
+                showOutput(data);
+            } catch (error) {
+                document.getElementById('mongodb-status').innerHTML = 
+                    `<p style="color: red;"> Migration failed</p>`;
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Migration failed'
+                });
+            }
+        }
+
+        async function mongodbStats() {
+            try {
+                const data = await apiFetch('/api/mongodb/stats');
+                document.getElementById('mongodb-status').innerHTML = 
+                    `<p>Users: ${data.stats.users}</p>
+                     <p>Media: ${data.stats.media}</p>
+                     <p>Sessions: ${data.stats.sessions}</p>
+                     <p>WatchHistory: ${data.stats.watch_history}</p>`;
+                showOutput(data);
+            } catch (error) {
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Failed to get stats'
                 });
             }
         }
