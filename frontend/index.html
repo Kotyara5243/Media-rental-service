@@ -93,7 +93,7 @@
                         <option value="">-- Select User --</option>
                     </select>
                 </label>
-                <label style="margin-left: 10px;">Duration (days): <input id="uc2-duration" type="number" value="3" style="width: 80px;"></label>
+                <label style="margin-left: 10px;">Duration (days): <input id="uc2-duration" type="number" value="3" min="1" max="365" style="width: 80px;"></label>
             </div>
             <button onclick="uc2LoadUsers()">Load Users</button>
             <button onclick="uc2LoadMedia()">Load Media</button>
@@ -105,7 +105,9 @@
             <button onclick="generateData()">Generate Random Data</button>
             <button onclick="checkData()">Check Data</button>
             <button onclick="showTables()">Show Database</button>
+            <button id="clear-db-button" onclick="clearTables()">Clear Database</button>
             <br><br>
+
             <button id="switch-db-button" onclick="switchDB()">Migrate to NoSQL</button>
             <button onclick="mongodbStats()">Check MongoDB Stats</button>
             <div id="dbstate">Active DB: mariadb</div>

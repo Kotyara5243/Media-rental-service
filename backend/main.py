@@ -11,6 +11,8 @@ from .databases.mariadb.usecase2 import use_case2 as uc2_logic
 from .databases.mongodb import mongodb as mongo
 from .databases.mongodb import mongo_migration as mongo_migration
 from .databases.mongodb import use_case1_mongo as uc1_mongodb 
+from .databases.mongodb import use_case2_mongo as uc2_mongo
+
 
 app = FastAPI(title="Media Rental Service", version="1.0.0") 
 
@@ -388,7 +390,7 @@ async def mongodb_clear():
 @app.post("/api/mongodb/usecase2/rent")
 async def mongodb_uc2_rent(user_id: int, media_id: int, duration_days: int):
     try:
-        session = mongo.insert_rental_session(user_id, media_id, duration_days)
+        session = uc2_mongo.rent_media(user_id, media_id, duration_days)
         return session
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -406,7 +408,7 @@ async def mongodb_uc2_rent(user_id: int, media_id: int, duration_days: int):
 @app.get("/api/mongodb/usecase2/media")
 async def mongodb_uc2_get_media():
     try:
-        media = mongo.get_all_media()
+        media = uc2_mongo.list_media()
         return {"media": media, "count": len(media)}
     except Exception as e:
         print(f"Error in mongodb_uc2_get_media: {e}")
@@ -422,7 +424,7 @@ async def mongodb_uc2_get_media():
 @app.get("/api/mongodb/usecase2/users")
 async def mongodb_uc2_get_users():
     try:
-        users = mongo.get_all_users()
+        users = uc2_mongo.list_users()
         return {"users": users, "count": len(users)}
     except Exception as e:
         print(f"Error in mongodb_uc2_get_users: {e}")
@@ -438,7 +440,7 @@ async def mongodb_uc2_get_users():
 @app.get("/api/mongodb/usecase2/user/{user_id}/rentals")
 async def mongodb_uc2_get_rentals(user_id: int):
     try:
-        rentals = mongo.get_user_rentals(user_id)
+        rentals = uc2_mongo.list_user_rentals(user_id)
         return {"rentals": rentals, "count": len(rentals)}
     except Exception as e:
         print(f"Error in mongodb_uc2_get_rentals: {e}")
