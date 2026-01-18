@@ -260,7 +260,7 @@ async def uc2_get_users():
 @app.post("/api/migrate-to-nosql")
 async def migrate_to_nosql():
     try:
-        mongo.migrate_from_mariadb()
+        mongo.migrate_from_sql()
         return {"message": "Migration to NoSQL completed successfully"}
     except Exception as e:
         print(f"Error in migrate_to_nosql: {e}")
@@ -275,7 +275,7 @@ async def migrate_to_nosql():
 @app.post("/api/switch-to-sql")
 async def switch_to_sql():
     try:
-        
+        mongo.reset_all_collections()
         return {"message": "Switched back to SQL database successfully"}
     except Exception as e:
         print(f"Error in switch_to_sql: {e}")
@@ -342,6 +342,21 @@ async def mongodb_stats():
             status_code=500,
             detail={
                 "code": "MONGODB_STATS_FAILED",
+                "message": str(e)
+            }
+        )
+    
+@app.get("/api/mongodb/collections")
+async def mongodb_list_collections():
+    try:
+        collections = mongo.get_all_collections()
+        return {"collections": collections, "count": len(collections)}
+    except Exception as e:
+        print(f"Error in mongodb_list_collections: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_LIST_FAILED",
                 "message": str(e)
             }
         )

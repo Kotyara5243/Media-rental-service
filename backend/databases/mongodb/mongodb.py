@@ -10,12 +10,15 @@ NOSQL DESIGN DECISIONS:
 5. NO FOREIGN KEYS: Use embedded documents instead
 """
 
+from collections import defaultdict
 from datetime import datetime, date
 from typing import List, Dict, Any, Optional
-from .mongodb_connection import get_collection
+from .mongodb_connection import get_collection, list_all_collections
 from bson.objectid import ObjectId
 from ..mariadb import mariadb
 
+
+COLLECTIONS = ['users', 'media', 'sessions', 'watch_history', 'counters']
 
 def convert_dates_to_datetime(obj: Any) -> Any:
     """
@@ -46,9 +49,7 @@ def get_next_sequence(sequence_name: str) -> int:
 
 
 def reset_all_collections():
-    collections = ['users', 'media', 'sessions', 'watch_history', 'counters']
-    
-    for coll_name in collections:
+    for coll_name in COLLECTIONS:
         collection = get_collection(coll_name)
         collection.drop()
   
@@ -57,8 +58,12 @@ def reset_all_collections():
     get_collection('sessions').create_index('session_id', unique=True)
     get_collection('sessions').create_index('user.user_id')
     get_collection('watch_history').create_index('user.user_id')
+    # get_collection('family').create_index('user.user_id')
     
     print("All MongoDB collections reset")
+
+def get_all_collections() :
+    return list_all_collections()
 
 def insert_user(user_name: str, email: str, birthday: datetime, location: str, 
                 bio: str, family_id: int, family_type: str, family_creation_date: datetime,

@@ -1,6 +1,8 @@
 import os
 from pymongo import MongoClient
+from pymongo.collection import Collection
 from pymongo.errors import ConnectionFailure
+from typing import Dict, List
 
 MONGODB_HOST = os.getenv('MONGODB_HOST', 'localhost')
 MONGODB_PORT = int(os.getenv('MONGODB_PORT', '27017'))
@@ -44,3 +46,16 @@ def close_mongodb_connection():
 def get_collection(collection_name: str):
     db = get_mongodb_connection()
     return db[collection_name]
+
+def list_all_collections() -> Dict[str, List[dict]]:
+    db = get_mongodb_connection()
+    result: Dict[str, List[dict]] = {}
+
+    for name in db.list_collection_names():
+        collection = db[name]
+        result[name] = [
+            {**doc, "_id": str(doc["_id"])}
+            for doc in collection.find()
+        ]
+
+    return result

@@ -100,26 +100,25 @@
             <button onclick="uc2ShowRentals()">Show My Rentals</button>
             <div id="uc2-media-list" style="margin-top: 10px;"></div>
         </div>
-        <div class="card">
+            <div class="card">
             <h2>Data Import</h2>
-            <button onclick="addData()">Add Sample Data</button>
-            <button onclick="generateData()">Generate random data</button>
-            <button onclick="checkData()">Check Data</button>
-            <button onclick="showTables()">Show Database</button>
-            <button id="switch-db-button" onclick="switchDB()">Migrate to NoSQL</button>
+                <!-- remove Add Sample Data on production -->
+                <button onclick="addData()">Add Sample Data</button>
+                <button onclick="generateData()">Generate random data</button>
+                <button onclick="checkData()">Check Data</button>
+                <button onclick="showTables()">Show Database</button>
+                <button id="switch-db-button" onclick="switchDB()">Migrate to NoSQL</button>
             <div id="dbstate">Active DB: mariadb</div>
         </div>
-        <div class="card">
-            <h2>MongoDB - NoSQL Implementation</h2>
-            <p><strong>Migration:</strong> Transform SQL data to MongoDB collections</p>
-            <button onclick="testMongoDB()">Test MongoDB Connection</button>
-            <button onclick="mongodbMigrate()">Migrate SQL → MongoDB</button>
-            <button onclick="mongodbStats()">Check MongoDB Stats</button>
-            <div id="mongodb-status" style="margin-top: 10px;"></div>
-        </div>
-            <button onclick="generateData()">Generate random data</button>
-            <button onclick="checkData()">Check Data</button>
-            <button onclick="showTables()">Show Database</button>
+            <div class="card">
+                <h2>MongoDB - NoSQL Implementation</h2>
+                <p><strong>Migration:</strong> Transform SQL data to MongoDB collections</p>
+                <button onclick="testMongoDB()">Test MongoDB Connection</button>
+                <button onclick="mongodbMigrate()">Migrate SQL → MongoDB</button>
+                <button onclick="mongodbStats()">Check MongoDB Stats</button>
+                <button onclick="mongodbCollections()">Check MongoDB Collections</button>
+                <div id="mongodb-status" style="margin-top: 10px;"></div>
+            </div>
         </div>
         <div id="output" class="output">Output will appear here...</div>
     </div>
@@ -197,9 +196,15 @@
         
         async function testDB() {
             try {
-                const data = await apiFetch('/api/test-db');
+                let data;
+                if(DBState.activeDB === 'mariadb') {
+                    data = await apiFetch('/api/test-db');
+                } else {
+                    data = await apiFetch('/api/mongodb/test');
+                }
                 showOutput(data);
             } catch (error) {
+                console.error("JS error:", error.message);
                 showOutput({
                     status: error.status ?? "N/A",
                     message: error.error?.message ?? "Unknown error"
@@ -210,9 +215,16 @@
 
         async function addData() {
             try {
-                const response = await apiFetch('/api/add-data', {
-                    method: 'POST'
-                });
+                let response;
+                if(DBState.activeDB === 'mariadb') {
+                    response = await apiFetch('/api/add-data', {
+                        method: 'POST'
+                    });
+                } else {
+                    response = await apiFetch('/api/mongodb/add-data', {
+                        method: 'POST'
+                    });
+                }
                 showOutput(response);
             } catch (error) {
                 showOutput({
@@ -225,9 +237,16 @@
         async function generateData() {
             document.getElementById('output').innerHTML = 'Generating data...';
             try {
-                const response = await await apiFetch('/api/generate-data', {
-                    method: 'POST'
-                });
+                let response;
+                if(DBState.activeDB === 'mariadb') {
+                    response = await apiFetch('/api/add-data', {
+                        method: 'POST'
+                    });
+                } else {
+                    response = await apiFetch('/api/mongodb/generate-data', {
+                        method: 'POST'
+                    });
+                }
                 showOutput(response);
             } catch (error) {
                 showOutput({
@@ -256,7 +275,12 @@
 
         async function testDatabase() {
             try {
-                const response = await fetch('/api/test-db');
+                let response;
+                if (DBState.activeDB === 'mariadb') {
+                    response = await apiFetch('/api/test-db');
+                } else {
+                    response = await apiFetch('/api/mongodb/test');
+                }
                 const data = await response.json();
                 document.getElementById('output').innerHTML = 
                     JSON.stringify(data, null, 2);
@@ -270,7 +294,12 @@
 
         async function showTables() {
             try {
-                const response = await apiFetch('/api/tables');
+                let response;
+                if (DBState.activeDB === 'mariadb') {
+                    response = await apiFetch('/api/tables');
+                } else {
+                    response = await apiFetch('/api/mongodb/collections');
+                }
                 showOutput(response);
             } catch (error) {
                 showOutput({
@@ -282,9 +311,16 @@
 
         async function clearTables() {
             try {
-                const response = await apiFetch('/api/tables/clear', {
-                    method: 'POST'
-                });
+                let response;
+                if (DBState.activeDB === 'mariadb') {
+                    response = await apiFetch('/api/tables/clear', {
+                        method: 'POST'
+                    });
+                } else {
+                    response = await apiFetch('/api/mongodb/clear', {
+                        method: 'POST'
+                    });
+                }
                 showOutput(response);
             } catch (error) {
                 showOutput({
@@ -485,7 +521,7 @@
                 });
             }
         }
-        
+
         // MONGODB FUNCTIONS
 
         async function testMongoDB() {
@@ -513,7 +549,7 @@
                 '<p style="color: blue;">Migrating data... This may take a moment...</p>';
 
             try {
-                const data = await apiFetch('/api/mongodb/migrate-from-sql', {
+                const data = await apiFetch('/api/mongodb/migrate-to-nosql', {
                     method: 'POST'
                 });
                 
@@ -548,6 +584,18 @@
                 showOutput({
                     status: error.status ?? 'N/A',
                     message: error.error?.message ?? 'Failed to get stats'
+                });
+            }
+        }
+
+        async function mongodbCollections() {
+            try {
+                const data = await apiFetch('/api/mongodb/collections');
+                showOutput(data);
+            } catch (error) {
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Failed to get collections'
                 });
             }
         }
