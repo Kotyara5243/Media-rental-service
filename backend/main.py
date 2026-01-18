@@ -15,6 +15,15 @@ app = FastAPI(title="Media Rental Service", version="1.0.0")
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+@app.on_event("startup")
+async def startup_event():
+    """Clear MongoDB collections to ensure clean state."""
+    try:
+        mongo.reset_all_collections()
+        print("MongoDB collections cleared on startup")
+    except Exception as e:
+        print(f"Warning: Could not clear MongoDB on startup: {e}")
+
 @app.get("/")
 async def read_root():
     return FileResponse("frontend/index.html")
@@ -91,22 +100,6 @@ async def list_tables():
             }
         )
 
-@app.post("/api/add-data")
-async def add_data():
-    try:
-        mariadb.add_sample_data()
-        return {"message": "Sample data added successfully"}
-    except Exception as e:
-        print(f"Error in add_data: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "code": "ADD_DATA_FAILED",
-                "message": "Failed to add sample data"
-            }
-        )
-
-        
 @app.post("/api/generate-data")
 async def generate_data():
     try:

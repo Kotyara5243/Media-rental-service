@@ -100,26 +100,17 @@
             <button onclick="uc2ShowRentals()">Show My Rentals</button>
             <div id="uc2-media-list" style="margin-top: 10px;"></div>
         </div>
-            <div class="card">
+        <div class="card">
             <h2>Data Import</h2>
-                <!-- remove Add Sample Data on production -->
-                <button onclick="addData()">Add Sample Data</button>
-                <button onclick="generateData()">Generate random data</button>
-                <button onclick="checkData()">Check Data</button>
-                <button onclick="showTables()">Show Database</button>
-                <button id="switch-db-button" onclick="switchDB()">Migrate to NoSQL</button>
+            <button onclick="generateData()">Generate Random Data</button>
+            <button onclick="checkData()">Check Data</button>
+            <button onclick="showTables()">Show Database</button>
+            <br><br>
+            <button id="switch-db-button" onclick="switchDB()">Migrate to NoSQL</button>
+            <button onclick="mongodbStats()">Check MongoDB Stats</button>
             <div id="dbstate">Active DB: mariadb</div>
         </div>
-            <div class="card">
-                <h2>MongoDB - NoSQL Implementation</h2>
-                <p><strong>Migration:</strong> Transform SQL data to MongoDB collections</p>
-                <button onclick="testMongoDB()">Test MongoDB Connection</button>
-                <button onclick="mongodbMigrate()">Migrate SQL → MongoDB</button>
-                <button onclick="mongodbStats()">Check MongoDB Stats</button>
-                <button onclick="mongodbCollections()">Check MongoDB Collections</button>
-                <div id="mongodb-status" style="margin-top: 10px;"></div>
-            </div>
-        </div>
+    </div>
         <div id="output" class="output">Output will appear here...</div>
     </div>
     
@@ -213,40 +204,23 @@
         }
 	// updated functions
 
-        async function addData() {
-            try {
-                let response;
-                if(DBState.activeDB === 'mariadb') {
-                    response = await apiFetch('/api/add-data', {
-                        method: 'POST'
-                    });
-                } else {
-                    response = await apiFetch('/api/mongodb/add-data', {
-                        method: 'POST'
-                    });
-                }
-                showOutput(response);
-            } catch (error) {
-                showOutput({
-                    status: error.status ?? "N/A",
-                    message: error.error?.message ?? "Unknown error"
-                });
-            }
-        }
-
         async function generateData() {
+            if(DBState.activeDB === 'mongodb') {
+                showOutput({
+                    message: "Generate Random Data is only available for MariaDB.\n\n" +
+                            "To populate MongoDB with data:\n" +
+                            "1. Switch to MariaDB mode\n" +
+                            "2. Click 'Generate Random Data'\n" +
+                            "3. Click 'Migrate to NoSQL' to copy all data to MongoDB"
+                });
+                return;
+            }
+            
             document.getElementById('output').innerHTML = 'Generating data...';
             try {
-                let response;
-                if(DBState.activeDB === 'mariadb') {
-                    response = await apiFetch('/api/generate-data', {
-                        method: 'POST'
-                    });
-                } else {
-                    response = await apiFetch('/api/mongodb/generate-data', {
-                        method: 'POST'
-                    });
-                }
+                const response = await apiFetch('/api/generate-data', {
+                    method: 'POST'
+                });
                 showOutput(response);
             } catch (error) {
                 showOutput({
@@ -258,8 +232,21 @@
 
         async function checkData() {
             try {
-                const response = await fetch('/api/check-data');
-                const data = await response.json();
+                let data;
+                if(DBState.activeDB === 'mariadb') {
+                    const response = await fetch('/api/check-data');
+                    data = await response.json();
+                } else {
+                    // MongoDB mode - query MongoDB stats
+                    const response = await fetch('/api/mongodb/stats');
+                    const mongoData = await response.json();
+                    data = {
+                        total_users: mongoData.stats.users,
+                        total_media: mongoData.stats.media,
+                        total_rentals: mongoData.stats.sessions,
+                        total_watch_history: mongoData.stats.watch_history
+                    };
+                }
                 
                 let html = '<h3> Current Data</h3>';
                 html += '<p>Total Users: ' + (data.total_users || 0) + '</p>';
@@ -574,12 +561,12 @@
         async function mongodbStats() {
             try {
                 const data = await apiFetch('/api/mongodb/stats');
-                document.getElementById('mongodb-status').innerHTML = 
-                    `<p>Users: ${data.stats.users}</p>
-                     <p>Media: ${data.stats.media}</p>
-                     <p>Sessions: ${data.stats.sessions}</p>
-                     <p>WatchHistory: ${data.stats.watch_history}</p>`;
-                showOutput(data);
+                let html = '<h3>MongoDB Statistics</h3>';
+                html += '<p>Users: ' + (data.stats.users || 0) + '</p>';
+                html += '<p>Media: ' + (data.stats.media || 0) + '</p>';
+                html += '<p>Sessions: ' + (data.stats.sessions || 0) + '</p>';
+                html += '<p>WatchHistory: ' + (data.stats.watch_history || 0) + '</p>';
+                document.getElementById('output').innerHTML = html;
             } catch (error) {
                 showOutput({
                     status: error.status ?? 'N/A',
