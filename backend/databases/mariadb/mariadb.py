@@ -68,52 +68,6 @@ def list_all_tables_with_rows() -> dict[str, list[dict]]:
     return result
 
 
-def add_sample_data() :
-    with get_mariadb() as connection:
-        try:
-            print("Clearing existing data...")
-            reset_all_tables()
-
-            # 1. Add one family
-            family = Family(None, 'Movie Fans', datetime.now().date())
-            insert_family(family)
-            print(f"Added 1 family (ID: {family.family_id})")
-            
-            # 2. Add two users 
-            # User 1: Zhami
-            zhami = User(None, 'Zhami', 'zhami@example.com', '2000-01-01', 'Vienna', 'Student', family.family_id)
-            insert_user(zhami)
-            
-            # User 2: Grisha
-            grisha = User(None, 'Grisha', 'grisha@example.com', '1995-05-05', 'Moscow', 'Movie lover', None)
-            insert_user(grisha)
-
-            print(f"Added 2 users (IDs: {zhami.user_id}, {grisha.user_id})")
-            
-            # 3. Add one device for Zhami 
-            device = Device(None, 'iPhone', datetime.now().date(), zhami.user_id)
-            insert_device(device)
-            print("Added 1 device for Zhami")
-            
-            # 4. Add one film
-            media = Media(None, 'Inception', 'Sci-Fi', 2010, 'A film about dreams', 'USA', 5)
-            insert_media(media)
-            
-            # Add to Film table
-            film = Film(None, 148, 1, media.media_id)
-            insert_film(film)
-            print(f"Added 1 film: Inception (Media ID: {media.media_id})")
-            
-            # 5. Add one rental session
-            session = Session(None, zhami.user_id, media.media_id, datetime.now(), 10, 1)
-            insert_session(session)
-            print("Added 1 rental session (Zhami rents Inception)")
-
-            # __list_tables()
-        except Exception:
-            connection.rollback()
-            raise
-
 #--------------Inserts--------------
 
 def execute_insert(sql: str, params: tuple) -> int | None:
