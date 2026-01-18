@@ -197,6 +197,9 @@ def get_user_rentals(user_id: int) -> List[Dict]:
         {'user.user_id': user_id},
         {'_id': 0}
     ).sort('date_of_rent', -1))
+
+    for rental in rentals:
+        rental['media_name'] = rental['media']['media_name']  # helper for the frontend
     
     return rentals
 
