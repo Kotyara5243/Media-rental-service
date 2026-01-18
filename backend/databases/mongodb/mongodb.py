@@ -83,9 +83,7 @@ def insert_user(user_name: str, email: str, birthday: datetime, location: str,
         'birthday': birthday,
         'location': location,
         'bio': bio,
-        'family': { 
-            'family_id': family_id
-        },
+        'family_id': family_id,
         'devices': devices or [],  
         'friends': friends or [],  
         'created_at': datetime.now()
@@ -231,7 +229,7 @@ def insert_watch_history(user_id: int, media_id: int, family_watch: bool) -> int
         'user': {  
             'user_id': user['user_id'],
             'user_name': user['user_name'],
-            'family': user['family']  
+            'family_id': user['family_id']  
         },
         'media': {  
             'media_id': media['media_id'],

@@ -55,6 +55,7 @@ def _migrate_users() -> int:
         print(f"  [Users] Found {len(devices_data)} devices")
         devices_by_user = {}
         for d in devices_data:
+            print(d)
             d = convert_dates_to_datetime(d)
             uid = d['user_id']
             if uid not in devices_by_user:
@@ -83,7 +84,7 @@ def _migrate_users() -> int:
                 'birthday': u['birthday'],
                 'location': u['location'],
                 'bio': u['bio'],
-                'family': u['family_id'],
+                'family_id': u['family_id'],
                 'devices': devices_by_user.get(u['user_id'], []),
                 'friends': friends_by_user.get(u['user_id'], [])
             })

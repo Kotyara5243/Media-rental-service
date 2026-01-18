@@ -6,10 +6,11 @@ from pydantic import BaseModel
 
 from .databases.mariadb import mariadb
 from .databases.mariadb.data_generator import generate_random_data
-from .databases.mariadb.usecase1 import use_case1 as uc1_data_gen
+from .databases.mariadb.usecase1 import use_case1 as uc1_mariadb
 from .databases.mariadb.usecase2 import use_case2 as uc2_logic
 from .databases.mongodb import mongodb as mongo
 from .databases.mongodb import mongo_migration as mongo_migration
+from .databases.mongodb import use_case1_mongo as uc1_mongodb 
 
 app = FastAPI(title="Media Rental Service", version="1.0.0") 
 
@@ -166,8 +167,18 @@ async def check_data():
  # Use Case 1
 @app.get("/api/usecase1/load-data")
 async def uc1_load_data() :
-    data = uc1_data_gen.load_data()
-    return data
+    try :
+        data = uc1_mariadb.load_data()
+        return data
+    except Exception as e:
+        print("Error in uc1_load_data: "+str(e))
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "UC1_LOAD_DATA_FAILED",
+                "message": "Failed to load data"
+            }
+        )
 
 class WatchRequest(BaseModel):
     user_id: int
@@ -176,7 +187,7 @@ class WatchRequest(BaseModel):
 @app.post("/api/usecase1/watch")
 async def uc1_watch_media(request: WatchRequest):
     try:
-        uc1_data_gen.watch_media(request.user_id, request.media_id)
+        uc1_mariadb.watch_media(request.user_id, request.media_id)
         return {"message": "Media watched successfully"}
     except Exception as e:
         print("Error in generate_data: "+str(e))
@@ -442,9 +453,9 @@ async def mongodb_uc2_get_rentals(user_id: int):
 
 # MongoDB Use Case 1: Watch Media
 @app.post("/api/mongodb/usecase1/watch")
-async def mongodb_uc1_watch(user_id: int, media_id: int, family_watch: bool = True):
+async def mongodb_uc1_watch(request: WatchRequest):
     try:
-        watch_id = mongo.insert_watch_history(user_id, media_id, family_watch)
+        watch_id = uc1_mongodb.watch_media(request.user_id, request.media_id)
         return {"message": "Watch history recorded", "watch_id": watch_id}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -459,17 +470,17 @@ async def mongodb_uc1_watch(user_id: int, media_id: int, family_watch: bool = Tr
         )
 
 
-@app.get("/api/mongodb/usecase1/family-media/{user_id}")
-async def mongodb_uc1_family_media(user_id: int):
+@app.get("/api/mongodb/usecase1/load-data")
+async def mongodb_uc1_load_data():
     try:
-        media = mongo.get_family_shared_media(user_id)
-        return {"media": media, "count": len(media)}
+        media = uc1_mongodb.load_data()
+        return media
     except Exception as e:
-        print(f"Error in mongodb_uc1_family_media: {e}")
+        print(f"Error in mongodb_uc1_load_data: {e}")
         raise HTTPException(
             status_code=500,
             detail={
-                "code": "MONGODB_FAMILY_MEDIA_FAILED",
+                "code": "MONGODB_LOAD_DATA_FAILED",
                 "message": str(e)
             }
         )

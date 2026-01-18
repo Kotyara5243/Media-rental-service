@@ -323,10 +323,11 @@
 
         async function uc1LoadData() {
             try {
+                let data;
                 if (DBState.activeDB === 'mariadb') {
-                    const data = await apiFetch('/api/usecase1/load-data');
+                    data = await apiFetch('/api/usecase1/load-data');
                 } else {
-                    const data = await apiFetch('/api/mongodb/usecase1/load-data');
+                    data = await apiFetch('/api/mongodb/usecase1/load-data');
                 }
                 uc1Data = data;
                 showOutput(data);
@@ -349,25 +350,25 @@
             }
         }
 
-        async function uc1GenerateTestData() {
-            try {
-                if (DBState.activeDB === 'mariadb') {
-                    const data = await apiFetch('/api/usecase1/generate', {
-                        method: 'POST'
-                    });
-                } else {
-                    const data = await apiFetch('/api/mongodb/usecase1/generate', {
-                        method: 'POST'
-                    });
-                }
-                showOutput(data);
-            } catch (error) {
-                showOutput({
-                    status: error.status ?? "N/A",
-                    message: error.error?.message ?? "Unknown error"
-                });
-            }
-        }
+        // async function uc1GenerateTestData() {
+        //     try {
+        //         if (DBState.activeDB === 'mariadb') {
+        //             const data = await apiFetch('/api/usecase1/generate', {
+        //                 method: 'POST'
+        //             });
+        //         } else {
+        //             const data = await apiFetch('/api/mongodb/usecase1/generate', {
+        //                 method: 'POST'
+        //             });
+        //         }
+        //         showOutput(data);
+        //     } catch (error) {
+        //         showOutput({
+        //             status: error.status ?? "N/A",
+        //             message: error.error?.message ?? "Unknown error"
+        //         });
+        //     }
+        // }
 
         async function uc1WatchMedia() {
             const userId = document.getElementById("user-select").value;
