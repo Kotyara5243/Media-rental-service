@@ -438,7 +438,12 @@
         // Use Case 2
         async function uc2LoadUsers() {
             try {
-                const data = await apiFetch('/api/usecase2/users');
+                let data;
+                if (DBState.activeDB === 'mariadb') {
+                    data = await apiFetch('/api/usecase2/users');
+                } else {
+                    data = await apiFetch('/api/mongodb/usecase2/users');
+                }
                 const select = document.getElementById('uc2-user-select');
                 if (!data.users || data.users.length === 0) {
                     select.innerHTML = '<option value="">No users available</option>';
@@ -457,7 +462,12 @@
 
         async function uc2LoadMedia() {
             try {
-                const data = await apiFetch('/api/usecase2/media');
+                let data;
+                if (DBState.activeDB === 'mariadb') {
+                    data = await apiFetch('/api/usecase2/media');
+                } else {
+                    data = await apiFetch('/api/mongodb/usecase2/media');
+                }
                 const target = document.getElementById('uc2-media-list');
                 if (!data.media || data.media.length === 0) {
                     target.innerHTML = '<p>No media available.</p>';
@@ -495,7 +505,12 @@
             if (!confirmed) return;
 
             try {
-                const result = await apiFetch(`/api/usecase2/rent?user_id=${userId}&media_id=${mediaId}&duration_days=${duration}`, { method: 'POST' });
+                let result;
+                if (DBState.activeDB === 'mariadb') {
+                    result = await apiFetch(`/api/usecase2/rent?user_id=${userId}&media_id=${mediaId}&duration_days=${duration}`, { method: 'POST' });
+                } else {
+                    result = await apiFetch(`/api/mongodb/usecase2/rent?user_id=${userId}&media_id=${mediaId}&duration_days=${duration}`, { method: 'POST' });
+                }
                 showOutput(result);
             } catch (error) {
                 showOutput({
@@ -512,7 +527,13 @@
                 return;
             }
             try {
-                const data = await apiFetch(`/api/usecase2/user/${userId}/rentals`);
+                let data;
+                let media_name;
+                if (DBState.activeDB === 'mariadb') {
+                    data = await apiFetch(`/api/usecase2/user/${userId}/rentals`);
+                } else {
+                    data = await apiFetch(`/api/mongodb/usecase2/user/${userId}/rentals`);
+                }
                 const target = document.getElementById('uc2-media-list');
                 if (!data.rentals || data.rentals.length === 0) {
                     target.innerHTML = '<p>No rentals for this user.</p>';
