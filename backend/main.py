@@ -9,6 +9,7 @@ from .databases.mariadb.data_generator import generate_random_data
 from .databases.mariadb.usecase1 import use_case1 as uc1_data_gen
 from .databases.mariadb.usecase2 import use_case2 as uc2_logic
 from .databases.mongodb import mongodb as mongo
+from .databases.mongodb import mongo_migration as mongo_migration
 
 app = FastAPI(title="Media Rental Service", version="1.0.0") 
 
@@ -260,7 +261,8 @@ async def uc2_get_users():
 @app.post("/api/migrate-to-nosql")
 async def migrate_to_nosql():
     try:
-        mongo.migrate_from_sql()
+        mongo_migration.migrate_from_sql()
+        mariadb.reset_all_tables()
         return {"message": "Migration to NoSQL completed successfully"}
     except Exception as e:
         print(f"Error in migrate_to_nosql: {e}")

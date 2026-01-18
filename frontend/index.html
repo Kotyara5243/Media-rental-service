@@ -239,7 +239,7 @@
             try {
                 let response;
                 if(DBState.activeDB === 'mariadb') {
-                    response = await apiFetch('/api/add-data', {
+                    response = await apiFetch('/api/generate-data', {
                         method: 'POST'
                     });
                 } else {
@@ -549,7 +549,7 @@
                 '<p style="color: blue;">Migrating data... This may take a moment...</p>';
 
             try {
-                const data = await apiFetch('/api/mongodb/migrate-to-nosql', {
+                const data = await apiFetch('/api/migrate-to-nosql', {
                     method: 'POST'
                 });
                 
