@@ -620,6 +620,18 @@
             }
         }
 
+        async function showMongoSamples() {
+            try {
+                const data = await apiFetch('/api/mongodb/samples');
+                showOutput(data);
+            } catch (error) {
+                showOutput({
+                    status: error.status ?? 'N/A',
+                    message: error.error?.message ?? 'Failed to get sample documents'
+                });
+            }
+        }
+
         async function mongodbCollections() {
             try {
                 const data = await apiFetch('/api/mongodb/collections');

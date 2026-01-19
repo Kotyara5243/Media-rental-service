@@ -372,3 +372,35 @@ def get_database_stats() -> Dict:
         stats[coll_name] = collection.count_documents({})
     
     return stats
+
+
+def get_sample_documents() -> Dict:
+
+    samples = {}
+    
+    # Sample User (shows embedded devices and friends)
+    user_sample = get_collection('users').find_one({}, {'_id': 0})
+    if user_sample:
+        samples['user'] = user_sample
+    
+    # Sample Media (shows polymorphic type with embedded type_details)
+    media_sample = get_collection('media').find_one({}, {'_id': 0})
+    if media_sample:
+        samples['media'] = media_sample
+    
+    # Sample Session (shows denormalized user and media data)
+    session_sample = get_collection('sessions').find_one({}, {'_id': 0})
+    if session_sample:
+        samples['session'] = session_sample
+    
+    # Sample Watch History (shows denormalized user and media data)
+    watch_sample = get_collection('watch_history').find_one({}, {'_id': 0})
+    if watch_sample:
+        samples['watch_history'] = watch_sample
+    
+    # Sample Family (shows embedded users array)
+    family_sample = get_collection('families').find_one({}, {'_id': 0})
+    if family_sample:
+        samples['family'] = family_sample
+    
+    return samples

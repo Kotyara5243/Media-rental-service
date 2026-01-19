@@ -353,6 +353,32 @@ async def mongodb_stats():
                 "message": str(e)
             }
         )
+
+
+@app.get("/api/mongodb/samples")
+async def mongodb_sample_documents():
+    try:
+        samples = mongo.get_sample_documents()
+        return {
+            "message": "Sample documents demonstrating NoSQL schema design",
+            "collections": samples,
+            "design_notes": {
+                "user": "Embedded devices array and friends array (N-side referencing)",
+                "media": "Polymorphic type field with embedded type_details",
+                "session": "Denormalized user and media data (eliminates JOINs)",
+                "watch_history": "Denormalized user and media data with family context",
+                "family": "Embedded users array showing family members"
+            }
+        }
+    except Exception as e:
+        print(f"Error in mongodb_sample_documents: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MONGODB_SAMPLES_FAILED",
+                "message": str(e)
+            }
+        )
     
 @app.get("/api/mongodb/collections")
 async def mongodb_list_collections():
