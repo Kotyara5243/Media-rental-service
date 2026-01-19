@@ -29,6 +29,7 @@ def load_data():
 def get_family_shared_media(user_id: int) -> List[Dict]:
     users = get_collection("users")
     sessions = get_collection("sessions")
+    families = get_collection("families")
 
     user = users.find_one(
         {"user_id": user_id},
@@ -37,18 +38,13 @@ def get_family_shared_media(user_id: int) -> List[Dict]:
     if not user or "family_id" not in user:
         return []
 
-    family_id = user["family_id"]
-    family_members = list(users.find(
-        {
-            "family_id": family_id,
-            "user_id": {"$ne": user_id}
-        },
-        {
-            "_id": 0,
-            "user_id": 1,
-            "user_name": 1
-        }
-    ))
+    family = families.find_one(
+        {"family_id": user["family_id"]},
+        {"_id": 0, "users": 1}
+    )
+    family_members = [member for member in family["users"] if member["user_id"] != user_id]
+    print(family_members)
+    
     if not family_members:
         return []
 
