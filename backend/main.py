@@ -473,8 +473,8 @@ async def mongodb_uc2_get_rentals(user_id: int):
 @app.post("/api/mongodb/usecase1/watch")
 async def mongodb_uc1_watch(request: WatchRequest):
     try:
-        watch_id = uc1_mongodb.watch_media(request.user_id, request.media_id)
-        return {"message": "Watch history recorded", "watch_id": watch_id}
+        family_watches = uc1_mongodb.watch_media(request.user_id, request.media_id)
+        return {"family_watches": family_watches}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

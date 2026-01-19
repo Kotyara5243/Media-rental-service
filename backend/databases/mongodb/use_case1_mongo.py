@@ -78,5 +78,12 @@ def get_family_shared_media(user_id: int) -> List[Dict]:
 
     return result
 
-def watch_media(user_id: int, media_id: int) -> int:
-    return insert_watch_history(user_id, media_id, 1)
+def watch_media(user_id: int, media_id: int) -> list[dict]:
+    insert_watch_history(user_id, media_id, 1)
+    result = get_family_watches()
+    return result
+
+def get_family_watches() -> list[dict]:
+    coll = get_collection("watch_history")
+    watches = list(coll.find({"family_watch" : 1}, {"_id": 0}))
+    return watches
