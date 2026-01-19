@@ -1,6 +1,8 @@
 services:
   mariadb:
-    image: mariadb:12.1.2
+    build:
+      context: .
+      dockerfile: Dockerfile.mariadb
     container_name: media_rental_mariadb
     environment:
       MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
@@ -11,11 +13,8 @@ services:
       - "3307:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
-      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      # Dont forget to remove local bind mounts on submission
     networks:
       - app-network
-    # NO HEALTHCHECK for now
 
   mongodb:
     image: mongo:8
@@ -51,10 +50,6 @@ services:
       MONGODB_DATABASE: ${MONGODB_DATABASE}
     networks:
       - app-network
-    volumes:
-      - ./backend:/app/backend
-      - ./frontend:/app/frontend
-      # Dont forget to remove local bind mounts on submission
 
 networks:
   app-network:

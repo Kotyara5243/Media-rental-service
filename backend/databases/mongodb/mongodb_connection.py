@@ -16,23 +16,24 @@ _db = None
 def get_mongodb_connection():
 
     global _client, _db
+
+    connection_string = (
+        f"mongodb://{MONGODB_USER}:{MONGODB_PASSWORD}"
+        f"@{MONGODB_HOST}:{MONGODB_PORT}/"
+        f"?authSource=admin"
+    )
     
     if _client is None:
-        try:
-            connection_string = f"mongodb://{MONGODB_USER}:{MONGODB_PASSWORD}@{MONGODB_HOST}:{MONGODB_PORT}/"
-            
-            _client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
-        
-            _client.admin.command('ping')
-            
-            _db = _client[MONGODB_DATABASE]
-            
-            print(f"Connected to MongoDB: {MONGODB_DATABASE}")
-            
-        except ConnectionFailure as e:
-            print(f"Failed to connect to MongoDB: {e}")
-            raise
-    
+        for attempt in range(10):
+            try:
+                _client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
+                _client.admin.command('ping')
+                _db = _client[MONGODB_DATABASE]
+                print(f"Connected to MongoDB: {MONGODB_DATABASE}")
+                return _db
+            except ConnectionFailure as e:
+                print(f"Failed to connect to MongoDB: {e}")
+                raise
     return _db
 
 def close_mongodb_connection():
