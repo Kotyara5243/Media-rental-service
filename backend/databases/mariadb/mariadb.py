@@ -40,7 +40,7 @@ def execute_select(sql: str, params: tuple = ()) -> list[dict]:
             cursor.execute(sql, params)
             return cursor.fetchall()
         
-def get_table_rows(table_name: str) -> dict:
+def get_table_rows(table_name: str) :
     rows = execute_select(f"SELECT * FROM `{table_name}`")
     return rows
 

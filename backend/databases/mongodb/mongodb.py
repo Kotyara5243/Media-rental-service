@@ -364,7 +364,7 @@ def generate_sample_data():
 
 def get_database_stats() -> Dict:
     """Get statistics about MongoDB collections"""
-    collections = ['users', 'media', 'sessions', 'watch_history']
+    collections = ['users', 'media', 'sessions', 'watch_history', 'families']
     stats = {}
     
     for coll_name in collections:

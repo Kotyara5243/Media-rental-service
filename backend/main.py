@@ -121,38 +121,28 @@ async def generate_data():
 
 @app.get("/api/check-data")
 async def check_data():
-    """Lightweight data sanity check: returns table counts."""
+    """Data sanity check: returns table counts."""
     try:
-        import pymysql
-        connection = pymysql.connect(
-            host=os.getenv('MARIADB_HOST', 'mariadb'),
-            user=os.getenv('MARIADB_USER', 'app_user'),
-            password=os.getenv('MARIADB_PASSWORD', 'app_password'),
-            database=os.getenv('MARIADB_DATABASE', 'media_rental_db'),
-            port=3306,
-            cursorclass=pymysql.cursors.DictCursor
-        )
-
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) as count FROM Users")
-            total_users = cursor.fetchone()['count']
-
-            cursor.execute("SELECT COUNT(*) as count FROM Media")
-            total_media = cursor.fetchone()['count']
-
-            cursor.execute("SELECT COUNT(*) as count FROM Sessions")
-            total_rentals = cursor.fetchone()['count']
-
-            cursor.execute("SELECT COUNT(*) as count FROM WatchHistory")
-            total_watch_history = cursor.fetchone()['count']
-
-        connection.close()
+        total_users = len(mariadb.get_table_rows('Users'))
+        total_media = len(mariadb.get_table_rows('Media'))
+        total_rentals = len(mariadb.get_table_rows('Sessions'))
+        total_watch_history = len(mariadb.get_table_rows('WatchHistory'))
+        total_families = len(mariadb.get_table_rows('Family'))
+        total_devices = len(mariadb.get_table_rows('Device'))
+        total_films = len(mariadb.get_table_rows('Film'))
+        total_series = len(mariadb.get_table_rows('Series'))
+        total_friendships = len(mariadb.get_table_rows('Friendships'))
 
         return {
             "total_users": total_users,
             "total_media": total_media,
             "total_rentals": total_rentals,
-            "total_watch_history": total_watch_history
+            "total_watch_history": total_watch_history,
+            "total_families": total_families,
+            "total_devices": total_devices,
+            "total_films": total_films,
+            "total_series": total_series,
+            "total_friendships": total_friendships
         }
 
     except Exception as e:

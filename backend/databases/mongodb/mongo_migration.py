@@ -47,10 +47,6 @@ def _migrate_users() -> int:
     try:
         users_coll = get_collection('users')
         
-        families_data = mariadb.execute_select("SELECT * FROM Family", ())
-        print(f"  [Users] Found {len(families_data)} families")
-        families = {f['family_id']: convert_dates_to_datetime(f) for f in families_data}
-        
         devices_data = mariadb.execute_select("SELECT * FROM Device", ())
         print(f"  [Users] Found {len(devices_data)} devices")
         devices_by_user = {}

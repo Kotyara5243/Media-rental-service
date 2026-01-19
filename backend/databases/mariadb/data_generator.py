@@ -40,6 +40,18 @@ def generate_random_data() :
     print("100 Devices generated")
     generate_friendships()
     print("50 Friendships generated")
+
+    # Clear empty families
+    deleted = execute_delete("""
+        DELETE FROM Family
+        WHERE family_id NOT IN (
+            SELECT DISTINCT family_id
+            FROM Users
+            WHERE family_id IS NOT NULL
+        )
+    """, ())
+    print(f"{deleted} empty Families deleted")
+
     print("Data generation successfull")
 
 

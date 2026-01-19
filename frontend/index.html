@@ -8,6 +8,7 @@
         :root {
             --primary-color: #007bff;
             --primary-color-hover: #0056b3;
+            --disabled-button-color: #a8a8a8;
         }
 
         body {
@@ -45,6 +46,9 @@
         button:hover {
             background: var(--primary-color-hover);
         }
+        button:disabled {
+            background: var(--disabled-button-color);
+        }
         .output {
             background: #333;
             color: #0f0;
@@ -65,7 +69,6 @@
             <h2>System Status</h2>
             <button onclick="checkHealth()">Check API Health</button>
             <button onclick="testDB()">Check Database</button>
-            <button onclick="testErrorOutput()">Check Error output</button>
             <div id="health-status"></div>
         </div>
         
@@ -102,14 +105,13 @@
         </div>
         <div class="card">
             <h2>Data Import</h2>
-            <button onclick="generateData()">Generate Random Data</button>
+            <button id="generate-data-button" onclick="generateData()">Generate Random Data</button>
             <button onclick="checkData()">Check Data</button>
             <button onclick="showTables()">Show Database</button>
             <button id="clear-db-button" onclick="clearTables()">Clear Database</button>
             <br><br>
-
             <button id="switch-db-button" onclick="switchDB()">Migrate to NoSQL</button>
-            <button onclick="mongodbStats()">Check MongoDB Stats</button>
+            <button id="mongodb-samples-button" onclick="showMongoSamples()" disabled>Show MongoDB Samples</button>
             <div id="dbstate">Active DB: mariadb</div>
         </div>
     </div>
@@ -175,17 +177,17 @@
             }
         }
 
-        async function testErrorOutput() {
-            try {
-                const data = await apiFetch('/api/test-error');
-                showOutput(data);
-            } catch (error) {
-                showOutput({
-                    status: error.status ?? "N/A",
-                    message: error.error?.message ?? "Unknown error"
-                });
-            }
-        }
+        // async function testErrorOutput() {
+        //     try {
+        //         const data = await apiFetch('/api/test-error');
+        //         showOutput(data);
+        //     } catch (error) {
+        //         showOutput({
+        //             status: error.status ?? "N/A",
+        //             message: error.error?.message ?? "Unknown error"
+        //         });
+        //     }
+        // }
         
         async function testDB() {
             try {
@@ -235,9 +237,15 @@
         async function checkData() {
             try {
                 let data;
+                let additional_html = '';
                 if(DBState.activeDB === 'mariadb') {
                     const response = await fetch('/api/check-data');
                     data = await response.json();
+                    additional_html += '<p>Total Devices: ' + (data.total_devices || 0) + '</p>';
+                    additional_html += '<p>Total Film: ' + (data.total_films || 0) + '</p>';
+                    additional_html += '<p>Total Series: ' + (data.total_series || 0) + '</p>';
+                    additional_html += '<p>Total Friendships: ' + (data.total_friendships || 0) + '</p>';
+                                       
                 } else {
                     // MongoDB mode - query MongoDB stats
                     const response = await fetch('/api/mongodb/stats');
@@ -246,7 +254,8 @@
                         total_users: mongoData.stats.users,
                         total_media: mongoData.stats.media,
                         total_rentals: mongoData.stats.sessions,
-                        total_watch_history: mongoData.stats.watch_history
+                        total_watch_history: mongoData.stats.watch_history,
+                        total_families: mongoData.stats.families
                     };
                 }
                 
@@ -255,6 +264,8 @@
                 html += '<p>Total Media: ' + (data.total_media || 0) + '</p>';
                 html += '<p>Total Rentals: ' + (data.total_rentals || 0) + '</p>';
                 html += '<p>Total Watch History: ' + (data.total_watch_history || 0) + '</p>';
+                html += '<p>Total Families: ' + (data.total_families || 0) + '</p>';
+                html += additional_html
                 
                 document.getElementById('output').innerHTML = html;
             } catch (error) {
@@ -611,6 +622,7 @@
                 html += '<p>Media: ' + (data.stats.media || 0) + '</p>';
                 html += '<p>Sessions: ' + (data.stats.sessions || 0) + '</p>';
                 html += '<p>WatchHistory: ' + (data.stats.watch_history || 0) + '</p>';
+                html += '<p>Families: ' + (data.stats.families || 0) + '</p>';
                 document.getElementById('output').innerHTML = html;
             } catch (error) {
                 showOutput({
@@ -669,6 +681,8 @@
                 });
                 set_db('mongodb');
                 document.getElementById('switch-db-button').innerText = 'Switch to SQL';
+                document.getElementById('mongodb-samples-button').disabled = false;
+                document.getElementById('generate-data-button').disabled = true;
                 showOutput({
                     message: 'Migration to NoSQL completed successfully.',
                     details: response
@@ -692,6 +706,8 @@
                 });
                 set_db('mariadb');
                 document.getElementById('switch-db-button').innerText = 'Migrate to NoSQL';
+                document.getElementById('mongodb-samples-button').disabled = true;
+                document.getElementById('generate-data-button').disabled = false;
                 showOutput({
                     message: 'Switched back to SQL database successfully.',
                     details: response
