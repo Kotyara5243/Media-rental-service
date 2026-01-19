@@ -96,5 +96,24 @@ def load_data() :
 
     return dict(result)
 
-def watch_media(user_id: int, media_id: int) :
+def watch_media(user_id: int, media_id: int) -> list[dict] :
     insert_watch_history(WatchHistory(None, user_id, media_id, datetime.now(), True))
+
+    select_result = execute_select(
+        """
+        SELECT 
+            u.user_name AS user_name,
+            m.media_name AS media_name,
+            f.family_type AS family_type,
+            wh.date_of_watch AS date_of_watch
+        FROM WatchHistory wh
+        INNER JOIN Users u ON u.user_id = wh.user_id 
+        INNER JOIN Media m ON m.media_id = wh.media_id
+        INNER JOIN Family f ON u.family_id = f.family_id
+        INNER JOIN Film fi ON fi.media_id = m.media_id 
+        WHERE wh.family_watch = TRUE;
+        """,
+        ()
+    )
+
+    return select_result

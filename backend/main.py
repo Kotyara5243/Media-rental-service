@@ -179,8 +179,8 @@ class WatchRequest(BaseModel):
 @app.post("/api/usecase1/watch")
 async def uc1_watch_media(request: WatchRequest):
     try:
-        uc1_mariadb.watch_media(request.user_id, request.media_id)
-        return {"message": "Media watched successfully"}
+        output = uc1_mariadb.watch_media(request.user_id, request.media_id)
+        return {"family_watches": output}
     except Exception as e:
         print("Error in generate_data: "+str(e))
         raise HTTPException(status_code=500, detail="Error generating data")
